@@ -1,0 +1,111 @@
+#!/bin/sh -e
+
+HTS_USER="hts"
+
+. /usr/share/debconf/confmodule
+db_version 2.0
+
+escape_json_string() {
+    LANG=C command -p awk '
+        BEGIN {
+            ORS = ""
+
+            for ( i = 1; i <= 127; i++ )
+                tr[ sprintf( "%c", i) ] = sprintf( "\\u%04x", i )
+
+            for ( i = 1; i < ARGC; i++ ) {
+                s = ARGV[i]
+                print "\""
+                while ( match( s, /[\001-\037\177"\\]/ ) ) {
+                    print substr(s,1,RSTART-1) tr[ substr(s,RSTART,RLENGTH) ]
+                    s = substr(s,RSTART+RLENGTH)
+                }
+                print s "\"\n"
+            }
+        }
+    ' "$@"
+}
+
+case "$1" in
+configure)
+    if ! getent passwd "$HTS_USER" >/dev/null; then
+        echo >&2 "Creating user: $HTS_USER..."
+        adduser --quiet --system --group --home /var/lib/tvheadend "$HTS_USER"
+    fi
+
+    # Add hts user to audio, video, and render groups (for hardware access)
+    usermod -a -G audio,video "$HTS_USER" 2>/dev/null || true
+    usermod -a -G render "$HTS_USER" 2>/dev/null || true
+
+    HTS_HOMEDIR="$(getent passwd "$HTS_USER" | cut -d':' -f6)"
+
+    # Handle previous configuration directory: If the HTS_USER home directory
+    # starts with /home/, append "/.hts/tvheadend" so the superuser
+    # configuration will go in the right place.
+    if [ -z "${HTS_HOMEDIR##/home/*}" ]; then
+        HTS_CONFDIR="$HTS_HOMEDIR/.hts/tvheadend"
+        echo >&2 "Legacy configuration directory $HTS_CONFDIR is in use."
+        install -d -g "$HTS_USER" -o "$HTS_USER" "$HTS_CONFDIR"
+    else
+        HTS_CONFDIR="$HTS_HOMEDIR"
+    fi
+
+    # Create necessary directories for tvheadend-full package
+    install -d -g "$HTS_USER" -o "$HTS_USER" "$HTS_HOMEDIR/recordings"
+    install -d -g "$HTS_USER" -o "$HTS_USER" "$HTS_HOMEDIR/webgrab"
+    mkdir -p /var/log/tvheadend
+    mkdir -p /etc/tvheadend/comskip
+    chown "$HTS_USER":"$HTS_USER" /var/log/tvheadend /etc/tvheadend 2>/dev/null || true
+
+    # Create symlink for picons
+    ln -sf /opt/picons "$HTS_HOMEDIR/picons" 2>/dev/null || true
+
+    # Only create superuser configuration if credentials are available from debconf
+    HTS_SUPERUSERCONF="${HTS_CONFDIR}/superuser"
+    HAS_USERNAME=false
+    HAS_PASSWORD=false
+
+    if db_get tvheadend/admin_username && [ -n "$RET" ]; then
+        HAS_USERNAME=true
+        ADMIN_USERNAME="$RET"
+    fi
+
+    if db_get tvheadend/admin_password && [ -n "$RET" ]; then
+        HAS_PASSWORD=true
+        ADMIN_PASSWORD="$RET"
+    fi
+
+    if [ "$HAS_USERNAME" = true ] && [ "$HAS_PASSWORD" = true ]; then
+        rm -f "$HTS_SUPERUSERCONF"
+        touch "$HTS_SUPERUSERCONF"
+        chmod 600 "$HTS_SUPERUSERCONF"
+        chown "$HTS_USER":"$HTS_USER" "$HTS_SUPERUSERCONF"
+
+        echo >>"$HTS_SUPERUSERCONF" "{"
+
+        JSONUSER="$(escape_json_string "$ADMIN_USERNAME")"
+        echo >>"$HTS_SUPERUSERCONF" "\"username\": $JSONUSER,"
+        JSONUSER=""
+        ADMIN_USERNAME=""
+
+        JSONPASS="$(escape_json_string "$ADMIN_PASSWORD")"
+        echo >>"$HTS_SUPERUSERCONF" "\"password\": $JSONPASS"
+        JSONPASS=""
+        ADMIN_PASSWORD=""
+
+        echo >>"$HTS_SUPERUSERCONF" "}"
+    fi
+
+    # Enable systemd service
+    if [ -d /run/systemd/system ]; then
+        systemctl daemon-reload || true
+        systemctl enable tvheadend.service || true
+    fi
+    ;;
+esac
+
+db_stop
+
+#DEBHELPER#
+
+exit 0

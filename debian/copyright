@@ -1,0 +1,45 @@
+TVHeadend Full Package
+=======================
+
+This package includes multiple components:
+
+TVHeadend
+---------
+HTS Tvheadend is copyright (c) Tvheadend Project 2006 - 2024
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Comskip
+-------
+Copyright (c) Erik Kaashoek
+Licensed under LGPL v2.1 or later
+
+Comchap/Comcut
+--------------
+Copyright (c) Brett Sheleski
+MIT License
+
+Picons
+------
+Copyright (c) Picons Project
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+
+WebGrab++
+---------
+Copyright (c) Jan van Straaten
+Licensed for personal use
+
+Package Maintainer
+------------------
+Roland Knall <rknall@gmail.com>

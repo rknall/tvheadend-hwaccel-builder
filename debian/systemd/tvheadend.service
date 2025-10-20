@@ -1,0 +1,14 @@
+[Unit]
+Description=Tvheadend - a TV streaming server and DVR
+After=auditd.service syslog.target network.target network-online.target local-fs.target
+
+[Service]
+EnvironmentFile=/etc/default/tvheadend
+ExecStart=/usr/bin/tvheadend -f -p /run/tvheadend.pid $OPTIONS
+PIDFile=/run/tvheadend.pid
+Type=forking
+Restart=on-failure
+RestartSec=54s
+
+[Install]
+WantedBy=multi-user.target

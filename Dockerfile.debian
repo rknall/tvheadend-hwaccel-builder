@@ -29,6 +29,9 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p ${BUILD_DIR} ${OUTPUT_DIR}
 WORKDIR ${BUILD_DIR}
 
+# Copy debian package configuration files
+COPY debian/ ${BUILD_DIR}/debian/
+
 # Build TVHeadend
 RUN echo "**** Building TVHeadend ****" && \
     git clone https://github.com/tvheadend/tvheadend.git tvheadend && \
@@ -129,207 +132,28 @@ RUN echo "**** Assembling package ****" && \
     fi && \
     sed -i 's|~/.wg++/guide.xml|/var/lib/tvheadend/webgrab/guide.xml|g' pkg/usr/bin/tv_grab_wg++
 
-# Create /etc/default/tvheadend
-RUN cat > pkg/etc/default/tvheadend << 'DEFAULTCONF'
-#
-# Default configuration for Tvheadend.
+# Copy /etc/default/tvheadend
+RUN cp ${BUILD_DIR}/debian/default/tvheadend pkg/etc/default/tvheadend
 
-# systemd
-# See tvheadend --help for more - default "-u hts -g video"
-OPTIONS="-u hts -g video"
-DEFAULTCONF
-
-# Create control file
+# Create control file from template
 RUN VERSION=$(cd tvheadend && git describe --always --dirty 2>/dev/null || echo "unknown") && \
     ARCH=$(dpkg --print-architecture) && \
-    cat > pkg/DEBIAN/control << EOF
-Package: tvheadend-full
-Version: 4.3-${VERSION}
-Section: video
-Priority: optional
-Architecture: ${ARCH}
-Depends: libavahi-client3, libavahi-common3, liburiparser1, zlib1g, libavcodec59 | libavcodec-extra59, libavformat59, libavfilter8, libavutil57, libswscale6, libswresample4, libssl3, libva2, libva-drm2, libx264-164, libx265-199, libvpx7, libopus0, libvorbis0a, libtheora0, libdvbcsa1, libhdhomerun4, libargtable2-0, libsdl2-2.0-0, python3, python3-requests, xmltv, perl
-Recommends: ffmpeg, streamlink, dotnet-runtime-8.0 | dotnet-runtime-6.0 | mono-runtime, mesa-va-drivers, mesa-vdpau-drivers, intel-media-va-driver
-Suggests: pngquant, nvidia-driver
-Maintainer: TVHeadend Full <support@tvheadend.org>
-Description: TV streaming server with commercial detection and extras
- TVHeadend with Comskip, Comchap, Comcut, Picons, and WebGrab++.
- Full-featured TV streaming and recording solution with hardware
- acceleration support (VAAPI, NVENC, QSV).
- .
- Hardware acceleration enabled for:
-  - Intel Quick Sync Video (QSV)
-  - NVIDIA NVENC
-  - AMD/Intel VAAPI
-  - VDPAU (NVIDIA)
-Homepage: https://tvheadend.org
-EOF
+    sed -e "s/__VERSION__/${VERSION}/g" -e "s/__ARCH__/${ARCH}/g" \
+        ${BUILD_DIR}/debian/control.template > pkg/DEBIAN/control
 
-# Create postinst
-RUN cat > pkg/DEBIAN/postinst << 'POSTINST'
-#!/bin/sh -e
+# Copy debian package scripts
+RUN cp ${BUILD_DIR}/debian/config pkg/DEBIAN/config && \
+    cp ${BUILD_DIR}/debian/templates pkg/DEBIAN/templates && \
+    cp ${BUILD_DIR}/debian/postinst pkg/DEBIAN/postinst && \
+    cp ${BUILD_DIR}/debian/prerm pkg/DEBIAN/prerm && \
+    cp ${BUILD_DIR}/debian/postrm pkg/DEBIAN/postrm
 
-HTS_USER="hts"
-HTS_HOMEDIR="/var/lib/tvheadend"
-
-case "$1" in
-configure)
-    # Create hts user and group if they don't exist
-    if ! getent group "$HTS_USER" >/dev/null; then
-        addgroup --quiet --system "$HTS_USER"
-    fi
-
-    if ! getent passwd "$HTS_USER" >/dev/null; then
-        adduser --quiet --system --ingroup "$HTS_USER" --home "$HTS_HOMEDIR" \
-            --no-create-home --disabled-password --disabled-login \
-            --shell /usr/sbin/nologin "$HTS_USER"
-    fi
-
-    # Add hts user to audio, video, and render groups (for hardware access)
-    # audio: audio devices
-    # video: /dev/dri/card* access (legacy and primary GPU)
-    # render: /dev/dri/renderD* access (modern DRI rendering)
-    usermod -a -G audio,video "$HTS_USER" 2>/dev/null || true
-    usermod -a -G render "$HTS_USER" 2>/dev/null || true
-
-    # Create necessary directories
-    install -d -g "$HTS_USER" -o "$HTS_USER" "$HTS_HOMEDIR/recordings"
-    install -d -g "$HTS_USER" -o "$HTS_USER" "$HTS_HOMEDIR/webgrab"
-    mkdir -p /var/log/tvheadend
-    mkdir -p /etc/tvheadend/comskip
-
-    # Set permissions
-    chown -R "$HTS_USER":"$HTS_USER" "$HTS_HOMEDIR" /etc/tvheadend /var/log/tvheadend 2>/dev/null || true
-    chmod 755 "$HTS_HOMEDIR" /etc/tvheadend /var/log/tvheadend 2>/dev/null || true
-    chmod 775 "$HTS_HOMEDIR/recordings" 2>/dev/null || true
-
-    # Create symlink for picons
-    ln -sf /opt/picons "$HTS_HOMEDIR/picons" 2>/dev/null || true
-
-    # Create access control entry for initial admin access
-    # Default credentials: admin/admin (CHANGE THESE IMMEDIATELY!)
-    mkdir -p "$HTS_HOMEDIR/accesscontrol"
-    HTS_ACCESSCONF="$HTS_HOMEDIR/accesscontrol/1"
-    if [ ! -f "$HTS_ACCESSCONF" ]; then
-        cat > "$HTS_ACCESSCONF" << 'ACCESSENTRY'
-{
-  "enabled": true,
-  "username": "admin",
-  "password": "admin",
-  "comment": "Default admin user - CHANGE PASSWORD IMMEDIATELY!",
-  "prefix": "0.0.0.0/0,::/0",
-  "streaming": true,
-  "adv_streaming": true,
-  "htsp_streaming": true,
-  "profile": "",
-  "dvr": true,
-  "htsp_dvr": true,
-  "all_dvr": true,
-  "all_rw_dvr": true,
-  "dvr_config": "",
-  "channel_min": 0,
-  "channel_max": 0,
-  "channel_tag": "",
-  "channel_tag_exclude": false,
-  "admin": true,
-  "webui": true
-}
-ACCESSENTRY
-        chmod 600 "$HTS_ACCESSCONF"
-        chown "$HTS_USER":"$HTS_USER" "$HTS_ACCESSCONF"
-        chown "$HTS_USER":"$HTS_USER" "$HTS_HOMEDIR/accesscontrol"
-    fi
-
-    # Reload systemd if available
-    if [ -d /run/systemd/system ]; then
-        systemctl daemon-reload || true
-        systemctl enable tvheadend.service || true
-    fi
-
-    echo ""
-    echo "=========================================="
-    echo "TVHeadend Full has been installed!"
-    echo "=========================================="
-    echo ""
-    echo "IMPORTANT: Default login credentials"
-    echo "  Username: admin"
-    echo "  Password: admin"
-    echo ""
-    echo "  CHANGE THESE IMMEDIATELY after first login!"
-    echo "  (Configuration → Users → Access Entries)"
-    echo ""
-    echo "Additional tools included:"
-    echo "  - Comskip: /usr/bin/comskip"
-    echo "  - Comchap: /usr/bin/comchap"
-    echo "  - Comcut: /usr/bin/comcut"
-    echo "  - Picons: /opt/picons"
-    echo "  - WebGrab++: /opt/webgrab/.wg++"
-    echo "  - tv_grab_wg++: /usr/bin/tv_grab_wg++"
-    echo ""
-    echo "Hardware acceleration enabled:"
-    echo "  - VAAPI (Intel/AMD)"
-    echo "  - NVENC (NVIDIA)"
-    echo "  - QSV (Intel Quick Sync)"
-    echo "  Note: User 'hts' added to audio, video, and render groups"
-    echo ""
-    echo "To start TVHeadend:"
-    echo "  sudo systemctl start tvheadend"
-    echo ""
-    echo "Web interface: http://localhost:9981"
-    echo ""
-    ;;
-esac
-
-exit 0
-POSTINST
-
-# Create prerm
-RUN cat > pkg/DEBIAN/prerm << 'PRERM'
-#!/bin/bash
-set -e
-if [ -d /run/systemd/system ]; then
-    systemctl stop tvheadend.service || true
-    systemctl disable tvheadend.service || true
-fi
-exit 0
-PRERM
-
-# Create postrm
-RUN cat > pkg/DEBIAN/postrm << 'POSTRM'
-#!/bin/sh -e
-if [ "$1" = "purge" ]; then
-    if getent passwd hts >/dev/null; then deluser hts || true; fi
-    if getent group hts >/dev/null; then delgroup hts || true; fi
-    rm -rf /etc/tvheadend || true
-    rm -rf /var/log/tvheadend || true
-    # Uncomment to also remove recordings:
-    # rm -rf /var/lib/tvheadend || true
-fi
-rm -f /var/lib/tvheadend/picons 2>/dev/null || true
-if [ -d /run/systemd/system ]; then systemctl daemon-reload || true; fi
-exit 0
-POSTRM
-
-# Create systemd service
-RUN cat > pkg/lib/systemd/system/tvheadend.service << 'SERVICE'
-[Unit]
-Description=Tvheadend - a TV streaming server and DVR
-After=auditd.service syslog.target network.target network-online.target local-fs.target
-
-[Service]
-EnvironmentFile=/etc/default/tvheadend
-ExecStart=/usr/bin/tvheadend -f -p /run/tvheadend.pid $OPTIONS
-PIDFile=/run/tvheadend.pid
-Type=forking
-Restart=on-failure
-RestartSec=54s
-
-[Install]
-WantedBy=multi-user.target
-SERVICE
+# Copy systemd service
+RUN cp ${BUILD_DIR}/debian/systemd/tvheadend.service pkg/lib/systemd/system/tvheadend.service
 
 # Set permissions and build
-RUN chmod 755 pkg/DEBIAN/postinst pkg/DEBIAN/prerm pkg/DEBIAN/postrm && \
+RUN chmod 755 pkg/DEBIAN/config pkg/DEBIAN/postinst pkg/DEBIAN/prerm pkg/DEBIAN/postrm && \
+    chmod 644 pkg/DEBIAN/templates && \
     dpkg-deb --build pkg
 
 # Store package in build directory (not output, as it will be mounted)
