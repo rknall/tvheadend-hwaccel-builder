@@ -1,0 +1,15 @@
+# Build output
+output/
+
+# Docker build cache
+.docker/
+
+# macOS
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
