@@ -1,0 +1,69 @@
+stages:
+  - build
+  - release
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+
+build-packages:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+
+  before_script:
+    - docker info
+    - df -h
+
+  script:
+    - chmod +x build-tvheadend.sh
+    - ./build-tvheadend.sh
+    - echo "Built packages:"
+    - ls -lh output/
+
+  artifacts:
+    name: "tvheadend-packages-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - output/*.deb
+    expire_in: 30 days
+    reports:
+      dotenv: build.env
+
+  only:
+    - main
+    - merge_requests
+    - tags
+
+  tags:
+    - docker
+
+# Create GitLab release when tagging
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+
+  release:
+    tag_name: '$CI_COMMIT_TAG'
+    description: 'Release $CI_COMMIT_TAG'
+    assets:
+      links:
+        - name: 'tvheadend-core'
+          url: '$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/output/tvheadend_*.deb?job=build-packages'
+        - name: 'tvheadend-comskip'
+          url: '$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/output/tvheadend-comskip_*.deb?job=build-packages'
+        - name: 'tvheadend-picons'
+          url: '$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/output/tvheadend-picons_*.deb?job=build-packages'
+        - name: 'tvheadend-webgrab'
+          url: '$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/output/tvheadend-webgrab_*.deb?job=build-packages'
+        - name: 'tvheadend-full'
+          url: '$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/output/tvheadend-full_*.deb?job=build-packages'
+
+  only:
+    - tags
+
+  except:
+    - branches
