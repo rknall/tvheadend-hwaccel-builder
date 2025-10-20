@@ -206,18 +206,38 @@ configure)
     # Create symlink for picons
     ln -sf /opt/picons "$HTS_HOMEDIR/picons" 2>/dev/null || true
 
-    # Create superuser file for initial admin access
+    # Create access control entry for initial admin access
     # Default credentials: admin/admin (CHANGE THESE IMMEDIATELY!)
-    HTS_SUPERUSERCONF="$HTS_HOMEDIR/superuser"
-    if [ ! -f "$HTS_SUPERUSERCONF" ]; then
-        cat > "$HTS_SUPERUSERCONF" << 'SUPERUSER'
+    mkdir -p "$HTS_HOMEDIR/accesscontrol"
+    HTS_ACCESSCONF="$HTS_HOMEDIR/accesscontrol/1"
+    if [ ! -f "$HTS_ACCESSCONF" ]; then
+        cat > "$HTS_ACCESSCONF" << 'ACCESSENTRY'
 {
-"username": "admin",
-"password": "admin"
+  "enabled": true,
+  "username": "admin",
+  "password": "admin",
+  "comment": "Default admin user - CHANGE PASSWORD IMMEDIATELY!",
+  "prefix": "0.0.0.0/0,::/0",
+  "streaming": true,
+  "adv_streaming": true,
+  "htsp_streaming": true,
+  "profile": "",
+  "dvr": true,
+  "htsp_dvr": true,
+  "all_dvr": true,
+  "all_rw_dvr": true,
+  "dvr_config": "",
+  "channel_min": 0,
+  "channel_max": 0,
+  "channel_tag": "",
+  "channel_tag_exclude": false,
+  "admin": true,
+  "webui": true
 }
-SUPERUSER
-        chmod 600 "$HTS_SUPERUSERCONF"
-        chown "$HTS_USER":"$HTS_USER" "$HTS_SUPERUSERCONF"
+ACCESSENTRY
+        chmod 600 "$HTS_ACCESSCONF"
+        chown "$HTS_USER":"$HTS_USER" "$HTS_ACCESSCONF"
+        chown "$HTS_USER":"$HTS_USER" "$HTS_HOMEDIR/accesscontrol"
     fi
 
     # Reload systemd if available
