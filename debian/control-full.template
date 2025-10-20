@@ -1,0 +1,20 @@
+Package: tvheadend-full
+Version: 4.3-__VERSION__
+Section: video
+Priority: optional
+Architecture: all
+Depends: tvheadend (= 4.3-__VERSION__), tvheadend-comskip (= 4.3-__VERSION__), tvheadend-picons (= 4.3-__VERSION__), tvheadend-webgrab (= 4.3-__VERSION__)
+Maintainer: Roland Knall <rknall@gmail.com>
+Description: Complete TVHeadend installation with all extras (meta-package)
+ This meta-package installs the complete TVHeadend suite including:
+  - TVHeadend core streaming server
+  - Comskip commercial detection tools
+  - Picons channel icons
+  - WebGrab++ EPG grabber
+ .
+ Installing this package provides a complete TV streaming and recording
+ solution with commercial detection, channel icons, and EPG data.
+ .
+ This package contains no files itself; it only ensures all components
+ are installed together.
+Homepage: https://tvheadend.org

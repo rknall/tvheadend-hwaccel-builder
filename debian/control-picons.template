@@ -1,0 +1,16 @@
+Package: tvheadend-picons
+Version: 4.3-__VERSION__
+Section: video
+Priority: optional
+Architecture: all
+Suggests: tvheadend
+Maintainer: Roland Knall <rknall@gmail.com>
+Description: Channel icons (picons) for TVHeadend
+ Service name picons for TVHeadend EPG and channel lists.
+ Includes both SNP (Service Name Picon) and SRP (Service Reference Picon)
+ formats in 220x132 resolution.
+ .
+ Release: __PICONS_RELEASE__
+ .
+ Automatically linked to /var/lib/tvheadend/picons when tvheadend is installed.
+Homepage: https://github.com/picons/picons

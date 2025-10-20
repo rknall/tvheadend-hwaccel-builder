@@ -111,83 +111,123 @@ RUN echo "**** Downloading WebGrab++ ****" && \
     # Verify installation
     echo "WebGrab++ files:" && ls -la webgrab/.wg++/ | head -20
 
-# Create package structure
-RUN mkdir -p pkg/DEBIAN pkg/usr/bin pkg/usr/share/tvheadend pkg/usr/share/doc/tvheadend-full \
-    pkg/usr/share/man/man1 pkg/etc/tvheadend pkg/etc/comskip pkg/etc/default \
-    pkg/var/lib/tvheadend pkg/opt/webgrab pkg/opt/picons pkg/lib/systemd/system
+# Create package structures for all 5 packages
+RUN mkdir -p pkg-tvheadend/DEBIAN pkg-tvheadend/usr/bin pkg-tvheadend/usr/share/tvheadend \
+    pkg-tvheadend/usr/share/man/man1 pkg-tvheadend/etc/tvheadend pkg-tvheadend/etc/default \
+    pkg-tvheadend/var/lib/tvheadend pkg-tvheadend/lib/systemd/system && \
+    mkdir -p pkg-comskip/DEBIAN pkg-comskip/usr/bin pkg-comskip/etc/comskip && \
+    mkdir -p pkg-picons/DEBIAN pkg-picons/opt/picons && \
+    mkdir -p pkg-webgrab/DEBIAN pkg-webgrab/usr/bin pkg-webgrab/opt/webgrab && \
+    mkdir -p pkg-full/DEBIAN
 
-# Assemble package
-RUN echo "**** Assembling package ****" && \
-    cp -a tvh-install/usr/* pkg/usr/ && \
-    cp -a cs-install/usr/bin/* pkg/usr/bin/ && \
-    cp comchap/comchap comchap/comcut pkg/usr/bin/ && \
-    chmod +x pkg/usr/bin/comchap pkg/usr/bin/comcut && \
-    cp -a picons/snp picons/srp pkg/opt/picons/ && \
-    cp -a webgrab/.wg++ pkg/opt/webgrab/ && \
-    cp webgrab/tv_grab_wg++ pkg/usr/bin/ && \
-    # Update WebGrab++ paths if config exists
-    if [ -f pkg/opt/webgrab/.wg++/WebGrab++.config.xml ]; then \
+# Assemble tvheadend core package
+RUN echo "**** Assembling tvheadend core package ****" && \
+    cp -a tvh-install/usr/* pkg-tvheadend/usr/ && \
+    cp ${BUILD_DIR}/debian/default/tvheadend pkg-tvheadend/etc/default/tvheadend && \
+    cp ${BUILD_DIR}/debian/systemd/tvheadend.service pkg-tvheadend/lib/systemd/system/tvheadend.service
+
+# Assemble comskip package
+RUN echo "**** Assembling comskip package ****" && \
+    cp -a cs-install/usr/bin/* pkg-comskip/usr/bin/ && \
+    cp comchap/comchap comchap/comcut pkg-comskip/usr/bin/ && \
+    chmod +x pkg-comskip/usr/bin/comchap pkg-comskip/usr/bin/comcut
+
+# Assemble picons package
+RUN echo "**** Assembling picons package ****" && \
+    cp -a picons/snp picons/srp pkg-picons/opt/picons/
+
+# Assemble webgrab package
+RUN echo "**** Assembling webgrab package ****" && \
+    cp -a webgrab/.wg++ pkg-webgrab/opt/webgrab/ && \
+    cp webgrab/tv_grab_wg++ pkg-webgrab/usr/bin/ && \
+    if [ -f pkg-webgrab/opt/webgrab/.wg++/WebGrab++.config.xml ]; then \
         sed -i "s|<filename>guide.xml</filename>|<filename>/var/lib/tvheadend/webgrab/guide.xml</filename>|g" \
-            pkg/opt/webgrab/.wg++/WebGrab++.config.xml; \
+            pkg-webgrab/opt/webgrab/.wg++/WebGrab++.config.xml; \
     fi && \
-    sed -i 's|~/.wg++/guide.xml|/var/lib/tvheadend/webgrab/guide.xml|g' pkg/usr/bin/tv_grab_wg++
+    sed -i 's|~/.wg++/guide.xml|/var/lib/tvheadend/webgrab/guide.xml|g' pkg-webgrab/usr/bin/tv_grab_wg++
 
-# Copy /etc/default/tvheadend
-RUN cp ${BUILD_DIR}/debian/default/tvheadend pkg/etc/default/tvheadend
-
-# Create control file from template
+# Create control files for all packages
 RUN VERSION=$(cd tvheadend && git describe --always --dirty 2>/dev/null || echo "unknown") && \
     ARCH=$(dpkg --print-architecture) && \
     sed -e "s/__VERSION__/${VERSION}/g" -e "s/__ARCH__/${ARCH}/g" \
-        ${BUILD_DIR}/debian/control.template > pkg/DEBIAN/control
+        ${BUILD_DIR}/debian/control-tvheadend.template > pkg-tvheadend/DEBIAN/control && \
+    sed -e "s/__VERSION__/${VERSION}/g" -e "s/__ARCH__/${ARCH}/g" \
+        ${BUILD_DIR}/debian/control-comskip.template > pkg-comskip/DEBIAN/control && \
+    sed -e "s/__VERSION__/${VERSION}/g" -e "s/__PICONS_RELEASE__/${PICONS_RELEASE}/g" \
+        ${BUILD_DIR}/debian/control-picons.template > pkg-picons/DEBIAN/control && \
+    sed -e "s/__VERSION__/${VERSION}/g" \
+        ${BUILD_DIR}/debian/control-webgrab.template > pkg-webgrab/DEBIAN/control && \
+    sed -e "s/__VERSION__/${VERSION}/g" \
+        ${BUILD_DIR}/debian/control-full.template > pkg-full/DEBIAN/control
 
-# Copy debian package scripts
-RUN cp ${BUILD_DIR}/debian/config pkg/DEBIAN/config && \
-    cp ${BUILD_DIR}/debian/templates pkg/DEBIAN/templates && \
-    cp ${BUILD_DIR}/debian/postinst pkg/DEBIAN/postinst && \
-    cp ${BUILD_DIR}/debian/prerm pkg/DEBIAN/prerm && \
-    cp ${BUILD_DIR}/debian/postrm pkg/DEBIAN/postrm
+# Copy debian package scripts for tvheadend core
+RUN cp ${BUILD_DIR}/debian/config pkg-tvheadend/DEBIAN/config && \
+    cp ${BUILD_DIR}/debian/templates pkg-tvheadend/DEBIAN/templates && \
+    cp ${BUILD_DIR}/debian/postinst pkg-tvheadend/DEBIAN/postinst && \
+    cp ${BUILD_DIR}/debian/prerm pkg-tvheadend/DEBIAN/prerm && \
+    cp ${BUILD_DIR}/debian/postrm pkg-tvheadend/DEBIAN/postrm && \
+    chmod 755 pkg-tvheadend/DEBIAN/config pkg-tvheadend/DEBIAN/postinst \
+        pkg-tvheadend/DEBIAN/prerm pkg-tvheadend/DEBIAN/postrm && \
+    chmod 644 pkg-tvheadend/DEBIAN/templates
 
-# Copy systemd service
-RUN cp ${BUILD_DIR}/debian/systemd/tvheadend.service pkg/lib/systemd/system/tvheadend.service
+# Copy postinst/postrm scripts for addon packages
+RUN cp ${BUILD_DIR}/debian/postinst-comskip pkg-comskip/DEBIAN/postinst && \
+    cp ${BUILD_DIR}/debian/postrm-comskip pkg-comskip/DEBIAN/postrm && \
+    chmod 755 pkg-comskip/DEBIAN/postinst pkg-comskip/DEBIAN/postrm && \
+    cp ${BUILD_DIR}/debian/postinst-picons pkg-picons/DEBIAN/postinst && \
+    cp ${BUILD_DIR}/debian/postrm-picons pkg-picons/DEBIAN/postrm && \
+    chmod 755 pkg-picons/DEBIAN/postinst pkg-picons/DEBIAN/postrm && \
+    cp ${BUILD_DIR}/debian/postinst-webgrab pkg-webgrab/DEBIAN/postinst && \
+    cp ${BUILD_DIR}/debian/postrm-webgrab pkg-webgrab/DEBIAN/postrm && \
+    chmod 755 pkg-webgrab/DEBIAN/postinst pkg-webgrab/DEBIAN/postrm
 
-# Set permissions and build
-RUN chmod 755 pkg/DEBIAN/config pkg/DEBIAN/postinst pkg/DEBIAN/prerm pkg/DEBIAN/postrm && \
-    chmod 644 pkg/DEBIAN/templates && \
-    dpkg-deb --build pkg
+# Build all 5 packages
+RUN echo "**** Building packages ****" && \
+    dpkg-deb --build pkg-tvheadend && \
+    dpkg-deb --build pkg-comskip && \
+    dpkg-deb --build pkg-picons && \
+    dpkg-deb --build pkg-webgrab && \
+    dpkg-deb --build pkg-full
 
-# Store package in build directory (not output, as it will be mounted)
+# Rename packages to proper names
 RUN VERSION=$(cd tvheadend && git describe --always --dirty 2>/dev/null || echo "unknown") && \
     ARCH=$(dpkg --print-architecture) && \
-    mv pkg.deb ${BUILD_DIR}/tvheadend-full_${VERSION}_${ARCH}.deb && \
+    mv pkg-tvheadend.deb ${BUILD_DIR}/tvheadend_${VERSION}_${ARCH}.deb && \
+    mv pkg-comskip.deb ${BUILD_DIR}/tvheadend-comskip_${VERSION}_${ARCH}.deb && \
+    mv pkg-picons.deb ${BUILD_DIR}/tvheadend-picons_${VERSION}_all.deb && \
+    mv pkg-webgrab.deb ${BUILD_DIR}/tvheadend-webgrab_${VERSION}_all.deb && \
+    mv pkg-full.deb ${BUILD_DIR}/tvheadend-full_${VERSION}_all.deb && \
     echo "${VERSION}" > ${BUILD_DIR}/VERSION.txt && \
     echo "${ARCH}" > ${BUILD_DIR}/ARCH.txt
 
 # Create a script to copy files and generate BUILD_INFO at runtime
-RUN cat > ${BUILD_DIR}/copy-output.sh << COPYSCRIPT
+RUN cat > ${BUILD_DIR}/copy-output.sh << 'COPYSCRIPT'
 #!/bin/bash
 set -e
-VERSION=\$(cat /build/VERSION.txt)
-ARCH=\$(cat /build/ARCH.txt)
-DEB_FILE="/build/tvheadend-full_\${VERSION}_\${ARCH}.deb"
+VERSION=$(cat /build/VERSION.txt)
+ARCH=$(cat /build/ARCH.txt)
 
-# Copy package to output
-cp "\${DEB_FILE}" /output/
+# Copy all packages to output
+cp /build/tvheadend_${VERSION}_${ARCH}.deb /output/
+cp /build/tvheadend-comskip_${VERSION}_${ARCH}.deb /output/
+cp /build/tvheadend-picons_${VERSION}_all.deb /output/
+cp /build/tvheadend-webgrab_${VERSION}_all.deb /output/
+cp /build/tvheadend-full_${VERSION}_all.deb /output/
 
 # Create BUILD_INFO
 cat > /output/BUILD_INFO.txt << EOF
-TVHeadend Full Package - Debian
-================================
-Build Date: \$(date)
-Version: \${VERSION}
-Architecture: \${ARCH}
+TVHeadend Multi-Package Build - Debian
+========================================
+Build Date: $(date)
+Version: ${VERSION}
+Architecture: ${ARCH} (core), all (addons/meta)
 Debian Base: bookworm
 
 Components:
-  - TVHeadend (${TVHEADEND_COMMIT})
-  - Comskip (${COMSKIP_COMMIT})
-  - Comchap/Comcut (${COMCHAP_COMMIT})
-  - Picons (${PICONS_RELEASE})
+  - TVHeadend (TVHEADEND_COMMIT)
+  - Comskip (COMSKIP_COMMIT)
+  - Comchap/Comcut (COMCHAP_COMMIT)
+  - Picons (PICONS_RELEASE)
   - WebGrab++ v5.3.0
 
 Hardware Acceleration:
@@ -196,12 +236,28 @@ Hardware Acceleration:
   - QSV (Intel Quick Sync)
   - VDPAU (NVIDIA)
 
-Package: tvheadend-full_\${VERSION}_\${ARCH}.deb
+Packages Built:
+  1. tvheadend_${VERSION}_${ARCH}.deb (core server)
+  2. tvheadend-comskip_${VERSION}_${ARCH}.deb (commercial detection)
+  3. tvheadend-picons_${VERSION}_all.deb (channel icons)
+  4. tvheadend-webgrab_${VERSION}_all.deb (EPG grabber)
+  5. tvheadend-full_${VERSION}_all.deb (meta-package - installs all)
 
-Installation:
-  sudo apt-get install -y xmltv perl
-  sudo dpkg -i tvheadend-full_\${VERSION}_\${ARCH}.deb
-  sudo apt-get install -f
+Installation Options:
+
+  Option 1 - Install everything (recommended for new users):
+    sudo dpkg -i tvheadend-full_${VERSION}_all.deb
+    sudo apt-get install -f
+
+  Option 2 - Install core only:
+    sudo dpkg -i tvheadend_${VERSION}_${ARCH}.deb
+    sudo apt-get install -f
+
+  Option 3 - Custom installation (pick components):
+    sudo dpkg -i tvheadend_${VERSION}_${ARCH}.deb
+    sudo dpkg -i tvheadend-comskip_${VERSION}_${ARCH}.deb
+    sudo dpkg -i tvheadend-picons_${VERSION}_all.deb
+    sudo apt-get install -f
 
 Recommended (for hardware acceleration):
   sudo apt-get install -y mesa-va-drivers mesa-vdpau-drivers intel-media-va-driver
@@ -220,11 +276,23 @@ Default Login:
 Note: User 'hts' is automatically added to audio/video/render groups for hardware access.
 EOF
 
-echo "Build complete!"
-ls -lh /output/
+# Replace placeholders in BUILD_INFO
+sed -i "s/TVHEADEND_COMMIT/TVHEADEND_COMMIT_PLACEHOLDER/g" /output/BUILD_INFO.txt
+sed -i "s/COMSKIP_COMMIT/COMSKIP_COMMIT_PLACEHOLDER/g" /output/BUILD_INFO.txt
+sed -i "s/COMCHAP_COMMIT/COMCHAP_COMMIT_PLACEHOLDER/g" /output/BUILD_INFO.txt
+sed -i "s/PICONS_RELEASE/PICONS_RELEASE_PLACEHOLDER/g" /output/BUILD_INFO.txt
+
+echo "Build complete! 5 packages created:"
+ls -lh /output/*.deb
 echo ""
 cat /output/BUILD_INFO.txt
 COPYSCRIPT
+
+# Now update the script to replace the commit placeholders with actual values
+RUN sed -i "s/TVHEADEND_COMMIT_PLACEHOLDER/${TVHEADEND_COMMIT}/g" ${BUILD_DIR}/copy-output.sh && \
+    sed -i "s/COMSKIP_COMMIT_PLACEHOLDER/${COMSKIP_COMMIT}/g" ${BUILD_DIR}/copy-output.sh && \
+    sed -i "s/COMCHAP_COMMIT_PLACEHOLDER/${COMCHAP_COMMIT}/g" ${BUILD_DIR}/copy-output.sh && \
+    sed -i "s/PICONS_RELEASE_PLACEHOLDER/${PICONS_RELEASE}/g" ${BUILD_DIR}/copy-output.sh
 
 RUN chmod +x ${BUILD_DIR}/copy-output.sh
 

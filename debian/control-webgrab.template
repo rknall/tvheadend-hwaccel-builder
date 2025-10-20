@@ -1,0 +1,17 @@
+Package: tvheadend-webgrab
+Version: 4.3-__VERSION__
+Section: video
+Priority: optional
+Architecture: all
+Depends: python3, python3-requests, xmltv, perl
+Recommends: dotnet-runtime-8.0 | dotnet-runtime-6.0 | mono-runtime
+Suggests: tvheadend
+Maintainer: Roland Knall <rknall@gmail.com>
+Description: WebGrab++ EPG grabber for TVHeadend
+ WebGrab++ is a multi-site incremental EPG (Electronic Program Guide) grabber.
+ Includes tv_grab_wg++ wrapper for TVHeadend integration.
+ .
+ Version: 5.3.0
+ .
+ EPG data is stored in /var/lib/tvheadend/webgrab/guide.xml
+Homepage: https://www.webgrabplus.com

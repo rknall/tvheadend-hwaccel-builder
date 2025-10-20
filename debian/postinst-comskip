@@ -1,0 +1,17 @@
+#!/bin/sh -e
+
+HTS_USER="hts"
+
+case "$1" in
+configure)
+    # Create comskip configuration directory
+    mkdir -p /etc/comskip
+
+    # Set ownership if hts user exists
+    if getent passwd "$HTS_USER" >/dev/null; then
+        chown "$HTS_USER":"$HTS_USER" /etc/comskip 2>/dev/null || true
+    fi
+    ;;
+esac
+
+exit 0

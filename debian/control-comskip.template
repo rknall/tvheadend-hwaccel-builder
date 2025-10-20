@@ -1,0 +1,16 @@
+Package: tvheadend-comskip
+Version: 4.3-__VERSION__
+Section: video
+Priority: optional
+Architecture: __ARCH__
+Depends: libargtable2-0, libsdl2-2.0-0
+Recommends: tvheadend
+Maintainer: Roland Knall <rknall@gmail.com>
+Description: Commercial detection and removal tools for TVHeadend
+ Comskip detects commercials in recorded video files. Includes:
+  - comskip: Commercial detection engine
+  - comchap: Add chapter markers at commercial breaks
+  - comcut: Remove commercials from video files
+ .
+ Integrates with TVHeadend for automatic commercial processing.
+Homepage: https://github.com/erikkaashoek/Comskip

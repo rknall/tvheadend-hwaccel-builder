@@ -50,15 +50,11 @@ configure)
         HTS_CONFDIR="$HTS_HOMEDIR"
     fi
 
-    # Create necessary directories for tvheadend-full package
+    # Create necessary directories for tvheadend core package
     install -d -g "$HTS_USER" -o "$HTS_USER" "$HTS_HOMEDIR/recordings"
-    install -d -g "$HTS_USER" -o "$HTS_USER" "$HTS_HOMEDIR/webgrab"
     mkdir -p /var/log/tvheadend
-    mkdir -p /etc/tvheadend/comskip
+    mkdir -p /etc/tvheadend
     chown "$HTS_USER":"$HTS_USER" /var/log/tvheadend /etc/tvheadend 2>/dev/null || true
-
-    # Create symlink for picons
-    ln -sf /opt/picons "$HTS_HOMEDIR/picons" 2>/dev/null || true
 
     # Only create superuser configuration if credentials are available from debconf
     HTS_SUPERUSERCONF="${HTS_CONFDIR}/superuser"

@@ -1,0 +1,15 @@
+#!/bin/sh -e
+
+HTS_USER="hts"
+
+case "$1" in
+configure)
+    # Create webgrab directory if hts user exists
+    if getent passwd "$HTS_USER" >/dev/null; then
+        HTS_HOMEDIR="$(getent passwd "$HTS_USER" | cut -d':' -f6)"
+        install -d -g "$HTS_USER" -o "$HTS_USER" "$HTS_HOMEDIR/webgrab"
+    fi
+    ;;
+esac
+
+exit 0

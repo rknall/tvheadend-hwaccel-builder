@@ -1,0 +1,15 @@
+#!/bin/sh -e
+
+HTS_USER="hts"
+
+case "$1" in
+configure)
+    # Create symlink for picons if hts user exists
+    if getent passwd "$HTS_USER" >/dev/null; then
+        HTS_HOMEDIR="$(getent passwd "$HTS_USER" | cut -d':' -f6)"
+        ln -sf /opt/picons "$HTS_HOMEDIR/picons" 2>/dev/null || true
+    fi
+    ;;
+esac
+
+exit 0

@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+case "$1" in
+purge)
+    # Clean up comskip configuration directory
+    rm -rf /etc/comskip || true
+    ;;
+esac
+
+exit 0
