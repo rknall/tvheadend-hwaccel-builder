@@ -1,220 +1,249 @@
-# TVHeadend Full - Debian Package Builder
+# TVHeadend Hardware Accelerated Builder
 
-Build a complete TVHeadend Debian package with commercial detection, picons, and EPG tools.
+A modular Debian package builder for TVHeadend with full hardware acceleration support (VAAPI, NVENC, QSV, VDPAU), commercial detection, channel icons, and EPG tools.
 
-## What's Included
+## Overview
 
-This package includes everything from the dfigus/addon-tvheadend repository:
+This project builds TVHeadend from source with hardware acceleration and creates **5 modular Debian packages** that can be installed independently or together:
 
-- **TVHeadend** - TV streaming server and recorder
-- **Comskip** - Commercial detection tool
-- **Comchap & Comcut** - Chapter markers and commercial removal
-- **Picons** - Channel icons (SNP and SRP formats)
-- **WebGrab++** - EPG grabber for electronic program guides
-- **Streamlink** support (optional dependency)
+1. **tvheadend** - Core TV streaming server with hardware acceleration
+2. **tvheadend-comskip** - Commercial detection and removal (Comskip, Comchap, Comcut)
+3. **tvheadend-picons** - Channel icons for EPG (220x132 px, SNP and SRP formats)
+4. **tvheadend-webgrab** - EPG grabber (WebGrab++ with tv_grab_wg++ wrapper)
+5. **tvheadend-full** - Meta-package that installs all of the above
 
-### Hardware Acceleration Support
+### Key Features
 
-Built with support for multiple hardware acceleration methods:
+- **Hardware Acceleration**: Built-in support for VAAPI, NVENC, QSV, and VDPAU
+- **Modular Packages**: Install only what you need (core only ~40MB vs full ~500MB)
+- **Commercial Detection**: Integrated Comskip with automated commercial removal
+- **Channel Icons**: Pre-configured picons for professional EPG appearance
+- **Docker-based Build**: Reproducible builds, no system pollution
+- **Multi-architecture**: Supports amd64 and arm64
 
-- **VAAPI** - Intel/AMD GPU acceleration (recommended)
-- **NVENC** - NVIDIA GPU encoding
-- **QSV** - Intel Quick Sync Video
-- **VDPAU** - NVIDIA video decoding
+### Future Plans
 
-The `tvheadend` user is automatically added to `audio`, `video`, and `render` groups for full hardware access.
+This builder is designed to be extensible. Planned additions:
+- RPM packages (Fedora/RHEL/CentOS)
+- Alpine APK packages
+- Automated CI/CD builds
 
-## Prerequisites
+## Quick Start
+
+### Prerequisites
 
 - Docker installed and running
 - 4-6GB free disk space
 - Internet connection
-- Debian/Ubuntu target system (for installation)
+- Target system: Debian 12 (Bookworm) or Ubuntu 22.04+
 
-## Quick Start
-
-### 1. Build the Package
+### Build Packages
 
 ```bash
+git clone https://github.com/rknall/tvheadend-hwaccel-builder.git
+cd tvheadend-hwaccel-builder
 chmod +x build-tvheadend.sh
 ./build-tvheadend.sh
 ```
 
-**Build time:** 25-35 minutes
+**Build time:** 25-35 minutes (first build, faster with Docker cache)
 
-### 2. Install on Target System
+Packages will be created in `./output/`:
+- `tvheadend_<version>_<arch>.deb` (~10MB)
+- `tvheadend-comskip_<version>_<arch>.deb` (~2MB)
+- `tvheadend-picons_<version>_all.deb` (~450MB)
+- `tvheadend-webgrab_<version>_all.deb` (~5MB)
+- `tvheadend-full_<version>_all.deb` (~1KB meta-package)
 
+### Install on Target System
+
+**Option 1: Install everything**
 ```bash
 cd output
 sudo dpkg -i tvheadend-full_*.deb
 sudo apt-get install -f
 ```
 
-### 3. Start TVHeadend
+**Option 2: Install core only** (minimal install)
+```bash
+cd output
+sudo dpkg -i tvheadend_*.deb
+sudo apt-get install -f
+```
+
+**Option 3: Custom selection**
+```bash
+cd output
+sudo dpkg -i tvheadend_*.deb tvheadend-comskip_*.deb
+sudo apt-get install -f
+```
+
+### First Time Setup
+
+After installation, you'll be prompted to create admin credentials:
+
+```bash
+sudo dpkg-reconfigure tvheadend
+```
+
+Then start the service:
 
 ```bash
 sudo systemctl start tvheadend
 sudo systemctl enable tvheadend
 ```
 
-### 4. Access Web Interface
-
-Open browser: `http://localhost:9981`
-
-**Default Login:**
-- Username: `admin`
-- Password: `admin`
-
-**IMPORTANT:** Change these credentials immediately after first login!
-- Go to: Configuration → Users → Access Entries
-- Edit the admin entry and set a strong password
+Access the web interface at: **http://localhost:9981**
 
 ## Hardware Acceleration
 
-### Install Drivers (Recommended)
+### Why Hardware Acceleration Matters
 
-For best transcoding performance, install hardware acceleration drivers:
+Hardware-accelerated transcoding can reduce CPU usage by 80-90% and enable:
+- Multiple simultaneous transcoding streams
+- Lower power consumption
+- Higher quality transcoding at lower bitrates
+- 4K transcoding on modest hardware
+
+### Supported Hardware
+
+- **Intel GPUs**: 6th gen and newer (VAAPI, QSV)
+- **AMD GPUs**: All GCN and newer (VAAPI)
+- **NVIDIA GPUs**: GTX 600 series and newer (NVENC, VDPAU)
+
+### Install Hardware Drivers
 
 ```bash
 # For Intel/AMD (VAAPI)
 sudo apt-get install mesa-va-drivers intel-media-va-driver
 
-# For NVIDIA (VDPAU/NVENC)
-sudo apt-get install mesa-vdpau-drivers nvidia-driver
+# For NVIDIA (NVENC/VDPAU)
+sudo apt-get install nvidia-driver nvidia-vaapi-driver
 
-# Verify VAAPI
+# Verify hardware acceleration is available
 vainfo
-
-# Check GPU devices
-ls -la /dev/dri/
-# Should show: card0 (video group), renderD128 (render group)
 ```
 
-### Groups Explained
+### User Permissions
 
-The `hts` user is automatically added to these groups:
+The tvheadend package automatically configures the `hts` user with proper hardware access:
+- Added to `video` group (legacy GPU access)
+- Added to `render` group (modern GPU rendering)
+- Added to `audio` group (audio devices)
 
-- **video** - Access to `/dev/dri/card*` (legacy GPU access)
-- **render** - Access to `/dev/dri/renderD*` (modern GPU rendering)
-- **audio** - Access to audio devices
-
-**Both video AND render groups are needed for modern hardware acceleration!**
-
-### Verify Access
-
+Verify with:
 ```bash
-# Check user groups
 id hts
 # Should show: groups=... audio(29) video(44) render(109)
-
-# Test as hts user
-sudo -u hts vainfo
-# Should list supported formats without errors
 ```
 
 ### Enable in TVHeadend
 
-1. Go to: Configuration → Recording → DVR Profiles
-2. Create transcoding profile
-3. Use hardware encoder (h264_vaapi, h264_nvenc, h264_qsv)
+1. Navigate to: **Configuration → Recording → DVR Profiles**
+2. Create or edit a profile
+3. Set video codec to:
+   - `h264_vaapi` (Intel/AMD)
+   - `h264_nvenc` (NVIDIA)
+   - `h264_qsv` (Intel Quick Sync)
 
-**Note:** User `hts` is automatically in all required groups for hardware access.
+## Modular Package Benefits
 
-## Manual Build (Alternative)
+The 5-package structure provides flexibility:
 
-If you prefer manual steps:
+| Package | Size | Purpose | Install When |
+|---------|------|---------|--------------|
+| tvheadend | ~10MB | Core server | Always (required) |
+| tvheadend-comskip | ~2MB | Ad detection | You want commercial skipping |
+| tvheadend-picons | ~450MB | Channel icons | You want professional EPG appearance |
+| tvheadend-webgrab | ~5MB | EPG grabber | You need EPG data from web sources |
+| tvheadend-full | ~1KB | Meta-package | You want everything |
 
-```bash
-# Build image
-docker build -t tvheadend-builder-debian -f Dockerfile.debian .
+**Example Use Cases:**
 
-# Run build
-mkdir -p output
-docker run --rm -v "$(pwd)/output:/output" tvheadend-builder-debian
+- **Minimal server**: Install only `tvheadend` (~10MB)
+- **With commercials removed**: `tvheadend` + `tvheadend-comskip` (~12MB)
+- **Complete setup**: `tvheadend-full` (installs all packages, ~500MB)
 
-# Install
-cd output
-sudo dpkg -i tvheadend-full_*.deb
-sudo apt-get install -f
+## Package Contents
+
+### tvheadend (core)
+```
+/usr/bin/tvheadend              Main server binary
+/etc/tvheadend/                 Configuration directory
+/var/lib/tvheadend/             Data and recordings
+/lib/systemd/system/            Systemd service
 ```
 
-## Features Configuration
-
-### Comskip - Commercial Detection
-
-1. Create configuration file:
-```bash
-sudo mkdir -p /etc/tvheadend/comskip
-sudo nano /etc/tvheadend/comskip/comskip.ini
+### tvheadend-comskip
+```
+/usr/bin/comskip                Commercial detection
+/usr/bin/comchap                Chapter marker tool
+/usr/bin/comcut                 Commercial removal tool
+/etc/comskip/                   Configuration directory
 ```
 
-2. Get country-specific configs from: http://www.kaashoek.com/comskip/
-
-3. In TVHeadend:
-   - Go to: Configuration → Recording → DVR Profiles
-   - Post-processor command:
-     ```
-     /usr/bin/comskip --ini=/etc/tvheadend/comskip/comskip.ini "%f"
-     ```
-
-### Comcut - Remove Commercials
-
-Chain with Comskip to automatically cut commercials:
-
-```bash
-/usr/bin/comskip --ini=/etc/tvheadend/comskip/comskip.ini "%f" && /usr/bin/comcut "%f"
+### tvheadend-picons
+```
+/opt/picons/snp/                Service Name Picons (220x132)
+/opt/picons/srp/                Service Reference Picons (220x132)
+/var/lib/tvheadend/picons       Symlink to /opt/picons
 ```
 
-### Picons - Channel Icons
+### tvheadend-webgrab
+```
+/usr/bin/tv_grab_wg++           TVHeadend wrapper script
+/opt/webgrab/.wg++/             WebGrab++ installation
+/var/lib/tvheadend/webgrab/     EPG output directory
+```
 
-1. Go to: Configuration → General → Base
+## Configuration Examples
+
+### Commercial Detection (Comskip)
+
+Create a post-processor script in your DVR profile:
+
+```bash
+# Configuration → Recording → DVR Profiles → Post-processor command:
+/usr/bin/comskip --ini=/etc/comskip/comskip.ini "%f"
+```
+
+Or automatically remove commercials:
+```bash
+/usr/bin/comskip --ini=/etc/comskip/comskip.ini "%f" && /usr/bin/comcut "%f"
+```
+
+Sample comskip.ini:
+```ini
+detect_method=43
+verbose=10
+output_edl=1
+output_comskip=1
+output_videoredo=1
+```
+
+### Channel Icons (Picons)
+
+1. Navigate to: **Configuration → General → Base**
 2. Set "Channel icon path": `file:///opt/picons/snp`
-3. Set view level to "Advanced" or "Expert"
+3. Icons will appear automatically for matching channels
 
-### WebGrab++ - EPG Grabber
+### EPG Grabber (WebGrab++)
 
-1. Install runtime (choose one):
+1. Install runtime:
 ```bash
 sudo apt-get install dotnet-runtime-8.0
 # or
 sudo apt-get install mono-runtime
 ```
 
-2. Configure:
+2. Configure channels:
 ```bash
 sudo nano /opt/webgrab/.wg++/WebGrab++.config.xml
 ```
 
-3. Run manually:
-```bash
-cd /opt/webgrab/.wg++
-mono WebGrab+Plus.exe
-```
-
-4. Use in TVHeadend:
-   - Configuration → Channel/EPG → EPG Grabber Modules
+3. Enable in TVHeadend:
+   - **Configuration → Channel/EPG → EPG Grabber Modules**
    - Enable "tv_grab_wg++"
-
-## Package Contents
-
-**Binaries:**
-- `/usr/bin/tvheadend` - Main server
-- `/usr/bin/comskip` - Commercial detector
-- `/usr/bin/comchap` - Add chapter markers
-- `/usr/bin/comcut` - Cut commercials
-- `/usr/bin/tv_grab_wg++` - EPG grabber wrapper
-
-**Configuration:**
-- `/etc/tvheadend/` - TVHeadend config
-- `/etc/comskip/` - Comskip config
-
-**Data:**
-- `/var/lib/tvheadend/` - Data and recordings
-- `/opt/picons/` - Channel icons
-- `/opt/webgrab/` - WebGrab++ installation
-
-**Service:**
-- `/lib/systemd/system/tvheadend.service`
 
 ## Service Management
 
@@ -224,161 +253,195 @@ sudo systemctl start tvheadend
 sudo systemctl stop tvheadend
 sudo systemctl restart tvheadend
 
-# Status
+# Status and logs
 sudo systemctl status tvheadend
-
-# Logs
 sudo journalctl -u tvheadend -f
 
-# Enable/Disable autostart
+# Enable/disable autostart
 sudo systemctl enable tvheadend
 sudo systemctl disable tvheadend
 ```
 
-## Complete Setup Example
+## Build Options
 
-### 1. Install package
+### Clean Build (no cache)
+
 ```bash
-sudo dpkg -i tvheadend-full_*.deb
-sudo apt-get install -f
+./build-tvheadend.sh --clean
+# or
+./build-tvheadend.sh --no-cache
 ```
 
-### 2. Configure Comskip
+### Manual Build Steps
+
 ```bash
-sudo mkdir -p /etc/tvheadend/comskip
-sudo nano /etc/tvheadend/comskip/comskip.ini
-```
+# Build Docker image
+docker build -t tvheadend-builder-debian -f Dockerfile.debian .
 
-Add basic config:
-```ini
-detect_method=43
-verbose=10
-output_edl=1
-output_comskip=1
+# Run build container
+mkdir -p output
+docker run --rm -v "$(pwd)/output:/output" tvheadend-builder-debian
 ```
-
-### 3. Start service
-```bash
-sudo systemctl start tvheadend
-sudo systemctl enable tvheadend
-```
-
-### 4. Configure via web interface
-- Access: http://localhost:9981
-- Create admin user
-- Run setup wizard
-- Configure tuners/IPTV
-- Set DVR profile post-processor
-- Enable picons path
 
 ## Troubleshooting
 
-### Build fails
+### 403 Error After Installation
+
+If you get a 403 error when accessing the web interface:
+
 ```bash
-# Check Docker
-docker info
-
-# Check disk space
-df -h
-
-# Clean and retry
-docker system prune -a
-./build-tvheadend.sh
+# Fix directory permissions
+sudo chown -R hts:hts /var/lib/tvheadend
+sudo systemctl restart tvheadend
 ```
 
-### TVHeadend won't start
+This is fixed in the latest version of the package.
+
+### TVHeadend Won't Start
+
 ```bash
-# Check logs
+# Check logs for errors
 sudo journalctl -u tvheadend -n 50
 
-# Fix permissions
-sudo chown -R hts:hts /etc/tvheadend /var/lib/tvheadend
+# Verify user and permissions
+id hts
+ls -la /var/lib/tvheadend
+
+# Fix permissions if needed
+sudo chown -R hts:hts /var/lib/tvheadend
 ```
 
-### Comskip not working
-- Verify comskip.ini exists
-- Check post-processor command syntax
-- Test manually: `/usr/bin/comskip --ini=/etc/tvheadend/comskip/comskip.ini /path/to/recording.ts`
+### Hardware Acceleration Not Working
 
-### Picons not showing
-- Set view level to "Advanced"
-- Check path: `file:///opt/picons/snp`
-- Verify files exist: `ls /opt/picons/snp`
-
-### WebGrab++ errors
 ```bash
-# Check runtime
-dpkg -l | grep dotnet
+# Verify drivers are installed
+vainfo
 
+# Check device permissions
+ls -la /dev/dri/
+# Should show card0 (video group) and renderD128 (render group)
+
+# Test as hts user
+sudo -u hts vainfo
+# Should list supported formats without permission errors
+
+# Verify hts user groups
+id hts
+# Must include: video, render
+```
+
+### Comskip Not Detecting Commercials
+
+```bash
 # Test manually
-cd /opt/webgrab/.wg++
-mono WebGrab+Plus.exe
+/usr/bin/comskip --ini=/etc/comskip/comskip.ini /path/to/recording.ts
+
+# Check logs
+ls -la /path/to/recording.*
+# Should see .edl, .txt, .log files after comskip runs
+
+# Tune detection settings in /etc/comskip/comskip.ini
+# Country-specific configs: http://www.kaashoek.com/comskip/
 ```
 
-## Uninstall
+### Build Failures
 
 ```bash
-# Remove package (keep config)
-sudo apt-get remove tvheadend-full
+# Check Docker status
+docker info
 
-# Complete removal
-sudo apt-get purge tvheadend-full
-sudo rm -rf /var/lib/tvheadend  # Remove recordings too
+# Check disk space (need 4-6GB)
+df -h
+
+# Clean Docker cache and rebuild
+docker system prune -a
+./build-tvheadend.sh --clean
 ```
 
-## Build Details
+## Component Versions
 
-**Build time:** 25-35 minutes
-- Docker image: 20-25 minutes
-- Package creation: 5-10 minutes
-
-**Disk space:**
-- Build: ~4-6GB
-- Package: ~10-15MB
-- Installed: ~40-60MB (without picons)
-- With picons: ~400-500MB
-
-## Dependencies
-
-**Required:**
-- Standard Debian libraries (auto-installed)
-- xmltv, perl
-
-**Recommended:**
-- ffmpeg (transcoding)
-- streamlink (stream extraction)
-- dotnet-runtime-8.0 or mono-runtime (WebGrab++)
-
-**Optional:**
-- pngquant (icon optimization)
-
-## Components
-
-All components match the addon-tvheadend repository:
+Current versions match the [dfigus/addon-tvheadend](https://github.com/dfigus/addon-tvheadend) repository:
 
 | Component | Version/Commit |
 |-----------|---------------|
 | TVHeadend | 7de8bf4826b1847118f3a42556cf0afeee2a5912 |
 | Comskip | a140b6ac8bc8f596729e9052819affc779c3b377 |
-| Comchap | dd7db30c258e965f282ac78825971dd0703a031e |
+| Comchap/Comcut | dd7db30c258e965f282ac78825971dd0703a031e |
 | Picons | 2025-10-17--08-28-59 |
 | WebGrab++ | v5.3.0 |
 
+To update versions, modify the ARG variables in `Dockerfile.debian`.
+
+## Architecture Support
+
+- **Core packages** (tvheadend, comskip): Built for host architecture (amd64 or arm64)
+- **Architecture-independent** (picons, webgrab, full): Built as `all`
+
+The build automatically detects your system architecture.
+
+## Uninstall
+
+```bash
+# Remove package (keep configuration)
+sudo apt-get remove tvheadend-full
+
+# Complete removal (including config and data)
+sudo apt-get purge tvheadend-full
+sudo rm -rf /var/lib/tvheadend  # Remove recordings too
+```
+
+## Project Structure
+
+```
+tvheadend-hwaccel-builder/
+├── Dockerfile.debian           Docker build for Debian packages
+├── build-tvheadend.sh          Build script wrapper
+├── debian/
+│   ├── control-*.template      Package metadata
+│   ├── postinst*               Post-installation scripts
+│   ├── prerm*                  Pre-removal scripts
+│   └── postrm*                 Post-removal scripts
+├── CLAUDE.md                   Development guidance
+├── CHANGELOG.md                Change history
+├── FIX_SUMMARY.md             Bug fixes documentation
+└── output/                     Built packages (created during build)
+```
+
+## Contributing
+
+Contributions welcome! Areas for improvement:
+
+- RPM package builds (Fedora/RHEL)
+- Alpine APK package builds
+- CI/CD automation (GitLab/GitHub Actions)
+- Additional hardware acceleration testing
+- Documentation improvements
+
 ## Resources
 
-- **TVHeadend:** https://tvheadend.org
-- **Comskip:** http://www.kaashoek.com/comskip/
-- **Picons:** https://github.com/picons/picons
-- **WebGrab++:** http://www.webgrabplus.com/
-- **Original addon:** https://github.com/dfigus/addon-tvheadend
-
-## Support
-
-- TVHeadend Forum: https://tvheadend.org/projects/tvheadend/boards
-- Comskip Forum: https://www.kaashoek.com/forum/
+- **TVHeadend**: https://tvheadend.org
+- **TVHeadend Documentation**: https://tvheadend.org/projects/tvheadend/wiki
+- **Comskip**: http://www.kaashoek.com/comskip/
+- **Picons**: https://github.com/picons/picons
+- **WebGrab++**: http://www.webgrabplus.com/
+- **Original Addon**: https://github.com/dfigus/addon-tvheadend
 
 ## License
 
 - TVHeadend: GPL-3.0
 - Comskip: GPL-2.0
+- This builder: MIT
 - Other components: See respective licenses
+
+## Support
+
+For TVHeadend support:
+- Forum: https://tvheadend.org/projects/tvheadend/boards
+- IRC: #tvheadend on Libera.Chat
+
+For build issues:
+- Open an issue on GitHub
+
+## Acknowledgments
+
+Based on the excellent work in [dfigus/addon-tvheadend](https://github.com/dfigus/addon-tvheadend).

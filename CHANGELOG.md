@@ -1,6 +1,35 @@
 # Dockerfile.debian - Changelog
 
-## Latest Fix (WebGrab++ Installation)
+## Latest Fix (Home Directory Ownership - 2025-10-20)
+
+**Issue:** Fresh installations result in 403 errors when accessing the web interface. Users cannot log in even with correct credentials.
+
+**Root Cause:** The `postinst` script creates subdirectories with correct ownership but never sets ownership on the parent `/var/lib/tvheadend` directory itself. When `adduser` creates this directory, it sometimes uses `root:root` ownership, preventing the tvheadend service (running as user `hts`) from creating configuration files.
+
+**Solution Implemented:**
+Added explicit ownership setting for the home directory in `debian/postinst` (line 55):
+```bash
+install -d -g "$HTS_USER" -o "$HTS_USER" "$HTS_HOMEDIR"
+```
+
+**Symptoms:**
+- 403 errors on `/extjs.html` and other web interface pages
+- Login popup appears but authentication fails
+- No `accesscontrol` directory created in `/var/lib/tvheadend`
+- Logs show: `http: <IP>: HTTP/1.1 GET (1) /extjs.html -- 403`
+
+**Workaround for Existing Installations:**
+```bash
+sudo chown -R hts:hts /var/lib/tvheadend
+sudo systemctl restart tvheadend
+```
+
+**Testing:**
+After rebuilding with this fix, fresh installations should have proper ownership and no 403 errors.
+
+---
+
+## WebGrab++ Installation Fix (Previous)
 
 **Issue:** WebGrab++ config file not being created, causing build failure.
 

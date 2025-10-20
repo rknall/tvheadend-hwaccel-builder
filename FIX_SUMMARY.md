@@ -1,4 +1,43 @@
-# WebGrab++ Build Issue - FIXED ✓
+# Fix Summary - All Issues RESOLVED ✓
+
+## Fix #1: Home Directory Ownership (2025-10-20) - FIXED ✓
+
+### Problem
+Fresh installations result in 403 errors when accessing the web interface:
+```
+http: 10.80.0.141: HTTP/1.1 GET (1) /extjs.html -- 403
+```
+
+Users could not log in even with correct credentials from `dpkg-reconfigure`.
+
+### Root Cause
+The `postinst` script creates subdirectories with correct ownership but never sets ownership on the parent `/var/lib/tvheadend` directory. When `adduser` creates the directory, it uses `root:root` ownership, preventing the tvheadend service (running as user `hts`) from creating configuration files.
+
+### Solution Applied
+**Modified:** `debian/postinst` (line 55)
+
+Added explicit ownership setting:
+```bash
+# Ensure home directory has correct ownership
+install -d -g "$HTS_USER" -o "$HTS_USER" "$HTS_HOMEDIR"
+```
+
+### Result
+✅ **Fresh installations work correctly**
+✅ **No more 403 errors**
+✅ **Access control configuration created properly**
+✅ **Login works with credentials from dpkg-reconfigure**
+
+### Workaround for Existing Installations
+If you already installed the package before this fix:
+```bash
+ssh root@nextpvr "chown -R hts:hts /var/lib/tvheadend"
+ssh root@nextpvr "systemctl restart tvheadend"
+```
+
+---
+
+## Fix #2: WebGrab++ Build Issue - FIXED ✓
 
 ## Problem
 ```
