@@ -47,11 +47,16 @@ RUN if [ -n "$(ls -A ${BUILD_DIR}/custom-libs/*.deb 2>/dev/null)" ]; then \
         apt-get remove -y --purge libavcodec-dev libavformat-dev libavfilter-dev libavutil-dev \
             libswscale-dev libswresample-dev libpostproc-dev libavdevice-dev || true && \
         apt-get autoremove -y && \
-        # Install all packages at once (dpkg will handle dependencies)
-        echo "**** Installing all custom library packages ****" && \
-        dpkg -i ${BUILD_DIR}/custom-libs/*.deb || true && \
-        # Fix any dependency issues
-        apt-get install -f -y && \
+        # Use gdebi or apt to install with dependency resolution
+        echo "**** Installing all custom library packages with dependencies ****" && \
+        apt-get update && \
+        apt-get install -y --no-install-recommends gdebi-core && \
+        for deb in ${BUILD_DIR}/custom-libs/*.deb; do \
+            echo "Installing: $(basename $deb)" && \
+            gdebi -n "$deb" || true; \
+        done && \
+        # Clean up
+        apt-get clean && rm -rf /var/lib/apt/lists/* && \
         # Verify installation
         echo "**** Verifying pkg-config files ****" && \
         pkg-config --modversion libavcodec libavformat libavfilter libavutil libswscale libswresample && \
