@@ -1,10 +1,12 @@
 stages:
   - build
+  - docker
   - release
 
 variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_IMAGE_NAME: "rknall/tvheadend-hwaccel"
 
 build-packages:
   stage: build
@@ -33,6 +35,60 @@ build-packages:
   only:
     - main
     - merge_requests
+    - tags
+
+  tags:
+    - docker
+
+# Build and push Docker container image
+build-docker:
+  stage: docker
+  image: docker:latest
+  services:
+    - docker:dind
+
+  before_script:
+    - docker info
+    - df -h
+    - |
+      if [ -n "$CI_REGISTRY_USER" ]; then
+        echo "Logging in to GitLab Container Registry"
+        echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+      fi
+    - |
+      if [ -n "$DOCKERHUB_USERNAME" ]; then
+        echo "Logging in to Docker Hub"
+        echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      fi
+
+  script:
+    - docker buildx create --use --name multiarch-builder || true
+    - docker buildx use multiarch-builder
+    - docker buildx inspect --bootstrap
+    - |
+      # Determine tags based on branch/tag
+      if [ "$CI_COMMIT_TAG" != "" ]; then
+        TAGS="-t $DOCKER_IMAGE_NAME:$CI_COMMIT_TAG -t $DOCKER_IMAGE_NAME:latest"
+        REGISTRY_TAGS="-t $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG -t $CI_REGISTRY_IMAGE:latest"
+      elif [ "$CI_COMMIT_BRANCH" = "main" ]; then
+        TAGS="-t $DOCKER_IMAGE_NAME:latest"
+        REGISTRY_TAGS="-t $CI_REGISTRY_IMAGE:latest"
+      else
+        TAGS="-t $DOCKER_IMAGE_NAME:$CI_COMMIT_REF_SLUG"
+        REGISTRY_TAGS="-t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      fi
+    - |
+      # Build and push multi-architecture image
+      docker buildx build \
+        --platform linux/amd64,linux/arm64 \
+        --file Dockerfile.docker \
+        $TAGS \
+        $REGISTRY_TAGS \
+        --push \
+        .
+
+  only:
+    - main
     - tags
 
   tags:

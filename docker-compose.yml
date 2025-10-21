@@ -1,0 +1,58 @@
+services:
+  tvheadend:
+    image: rknall/tvheadend-hwaccel:latest
+    container_name: tvheadend
+    restart: unless-stopped
+
+    # Network mode - use host for easier DVB adapter access
+    # Uncomment if you need direct host network access
+    # network_mode: host
+
+    ports:
+      - "9981:9981"  # Web interface
+      - "9982:9982"  # HTSP (streaming protocol)
+
+    environment:
+      - TZ=Europe/Vienna  # Set your timezone
+      - PUID=9981
+      - PGID=9981
+
+    volumes:
+      # Configuration data
+      - ./config:/var/lib/tvheadend
+
+      # Recordings directory
+      - ./recordings:/recordings
+
+      # Optional: Custom picons
+      # - ./picons:/opt/picons
+
+      # Optional: WebGrab++ config
+      # - ./webgrab:/var/lib/tvheadend/webgrab
+
+      # Optional: Comskip config
+      # - ./comskip:/etc/comskip
+
+    devices:
+      # Hardware acceleration - Intel/AMD GPU
+      - /dev/dri:/dev/dri
+
+      # DVB adapters - adjust based on your setup
+      # - /dev/dvb:/dev/dvb
+
+      # NVIDIA GPU (requires nvidia-docker)
+      # - /dev/nvidia0:/dev/nvidia0
+      # - /dev/nvidiactl:/dev/nvidiactl
+
+    # Uncomment for NVIDIA GPU support
+    # runtime: nvidia
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=all
+    #   - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+
+    # Optional: Add capabilities for better hardware access
+    # cap_add:
+    #   - SYS_ADMIN
+
+    # Optional: Privileged mode (less secure, but ensures all hardware access)
+    # privileged: true

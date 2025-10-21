@@ -1,16 +1,32 @@
 # TVHeadend Hardware Accelerated Builder
 
-A modular Debian package builder for TVHeadend with full hardware acceleration support (VAAPI, NVENC, QSV, VDPAU), commercial detection, channel icons, and EPG tools.
+A modular builder for TVHeadend with full hardware acceleration support (VAAPI, NVENC, QSV, VDPAU), commercial detection, channel icons, and EPG tools.
+
+Available as **Debian packages** or **Docker container**.
 
 ## Overview
 
-This project builds TVHeadend from source with hardware acceleration and creates **5 modular Debian packages** that can be installed independently or together:
+This project builds TVHeadend from source with hardware acceleration and provides two deployment options:
+
+### Option 1: Debian Packages
+
+Creates **5 modular Debian packages** that can be installed independently or together:
 
 1. **tvheadend** - Core TV streaming server with hardware acceleration
 2. **tvheadend-comskip** - Commercial detection and removal (Comskip, Comchap, Comcut)
 3. **tvheadend-picons** - Channel icons for EPG (220x132 px, SNP and SRP formats)
 4. **tvheadend-webgrab** - EPG grabber (WebGrab++ with tv_grab_wg++ wrapper)
 5. **tvheadend-full** - Meta-package that installs all of the above
+
+### Option 2: Docker Container
+
+Pre-built Docker image with everything included:
+- Multi-architecture support (amd64, arm64)
+- All components pre-installed
+- Easy deployment with docker-compose
+- Available on Docker Hub: `rknall/tvheadend-hwaccel`
+
+See [Docker Documentation](docs/DOCKER.md) for details.
 
 ### Key Features
 
@@ -30,20 +46,50 @@ This builder is designed to be extensible. Planned additions:
 
 ## Quick Start
 
-### Prerequisites
+Choose your preferred deployment method:
+
+### Option A: Docker Container (Recommended for Quick Setup)
+
+```bash
+# Using docker run
+docker run -d \
+  --name tvheadend \
+  -p 9981:9981 -p 9982:9982 \
+  -v /path/to/config:/var/lib/tvheadend \
+  -v /path/to/recordings:/recordings \
+  --device /dev/dri:/dev/dri \
+  rknall/tvheadend-hwaccel:latest
+
+# Or using docker-compose
+curl -O https://raw.githubusercontent.com/rknall/TVHBuilder/main/docker-compose.yml
+docker compose up -d
+```
+
+Access web interface at `http://localhost:9981` (default: admin/admin)
+
+Full Docker documentation: [docs/DOCKER.md](docs/DOCKER.md)
+
+### Option B: Build Debian Packages
+
+#### Prerequisites
 
 - Docker installed and running
 - 4-6GB free disk space
 - Internet connection
 - Target system: Debian 12 (Bookworm) or Ubuntu 22.04+
 
-### Build Packages
+#### Build Commands
 
 ```bash
-git clone https://github.com/rknall/tvheadend-hwaccel-builder.git
-cd tvheadend-hwaccel-builder
+git clone https://github.com/rknall/TVHBuilder.git
+cd TVHBuilder
 chmod +x build-tvheadend.sh
+
+# Build Debian packages
 ./build-tvheadend.sh
+
+# Or build Docker container
+./build-tvheadend.sh --docker
 ```
 
 **Build time:** 25-35 minutes (first build, faster with Docker cache)

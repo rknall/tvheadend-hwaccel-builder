@@ -1,0 +1,204 @@
+# Dockerfile.docker - Runtime TVHeadend container with hardware acceleration
+# This creates a Docker image for running TVHeadend directly in a container
+# Image: rknall/tvheadend-hwaccel
+
+FROM debian:bookworm-slim
+
+# Package versions (matching build)
+ARG TVHEADEND_COMMIT="7de8bf4826b1847118f3a42556cf0afeee2a5912"
+ARG COMSKIP_COMMIT="a140b6ac8bc8f596729e9052819affc779c3b377"
+ARG COMCHAP_COMMIT="dd7db30c258e965f282ac78825971dd0703a031e"
+ARG PICONS_RELEASE="2025-10-17--08-28-59"
+
+# Build metadata
+LABEL org.opencontainers.image.title="TVHeadend with Hardware Acceleration"
+LABEL org.opencontainers.image.description="TVHeadend TV streaming server with VAAPI/NVENC/QSV support, Comskip, Picons, and WebGrab++"
+LABEL org.opencontainers.image.authors="Roland Knall <roland@knall.family>"
+LABEL org.opencontainers.image.source="https://github.com/rknall/TVHBuilder"
+LABEL org.opencontainers.image.version="${TVHEADEND_COMMIT}"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TVHEADEND_USER=hts \
+    TVHEADEND_UID=9981 \
+    TVHEADEND_GID=9981
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    # Core runtime libraries
+    libavahi-client3 libavahi-common3 liburiparser1 \
+    libavcodec60 libavformat60 libavfilter9 libavutil58 \
+    libswscale7 libswresample4 \
+    # Hardware acceleration
+    libva-drm2 libva2 mesa-va-drivers intel-media-va-driver \
+    libvdpau1 mesa-vdpau-drivers \
+    # Codec libraries
+    libx264-164 libx265-199 libvpx7 libopus0 libvorbis0a libtheora0 \
+    # DVB and streaming
+    libdvbcsa1 libhdhomerun4 \
+    # Comskip dependencies
+    libargtable2-0 libsdl2-2.0-0 \
+    # WebGrab++ dependencies
+    dotnet-runtime-8.0 \
+    # Utilities
+    wget curl ca-certificates tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create user and directories
+RUN groupadd -g ${TVHEADEND_GID} ${TVHEADEND_USER} && \
+    useradd -u ${TVHEADEND_UID} -g ${TVHEADEND_GID} -d /var/lib/tvheadend -s /bin/bash ${TVHEADEND_USER} && \
+    usermod -aG video,audio,render ${TVHEADEND_USER} && \
+    mkdir -p /var/lib/tvheadend /etc/tvheadend /etc/comskip /opt/picons /opt/webgrab && \
+    chown -R ${TVHEADEND_USER}:${TVHEADEND_USER} /var/lib/tvheadend /etc/tvheadend
+
+# Build stage - compile TVHeadend and components
+FROM debian:bookworm AS builder
+
+ARG TVHEADEND_COMMIT
+ARG COMSKIP_COMMIT
+ARG COMCHAP_COMMIT
+ARG PICONS_RELEASE
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    BUILD_DIR=/build
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential pkg-config git cmake autoconf automake libtool \
+    wget curl ca-certificates jq xz-utils \
+    libssl-dev libavahi-client-dev libavahi-common-dev liburiparser-dev \
+    zlib1g-dev libavcodec-dev libavformat-dev libavfilter-dev libavutil-dev \
+    libswscale-dev libswresample-dev libva-dev libva-drm2 libva-x11-2 \
+    libx264-dev libx265-dev libvpx-dev libopus-dev libvorbis-dev libtheora-dev \
+    libdvbcsa-dev libhdhomerun-dev python3 python3-requests \
+    gettext libargtable2-dev libsdl2-dev ccache pngquant \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR ${BUILD_DIR}
+
+# Build TVHeadend
+RUN echo "**** Building TVHeadend ****" && \
+    git clone https://github.com/tvheadend/tvheadend.git tvheadend && \
+    cd tvheadend && git checkout "${TVHEADEND_COMMIT}" && \
+    sed -i 's/document\.cookie="ys-"+a/document\.cookie="ys-"+encodeURIComponent(a)/g' vendor/ext-3.4/ext-all.js && \
+    sed -i 's/a\.substr(3)/decodeURIComponent(a\.substr(3))/g' vendor/ext-3.4/ext-all.js && \
+    sed -i 's/document\.cookie = "ys-"+ name/ document\.cookie = "ys-"+ encodeURIComponent(name)/g' vendor/ext-3.4/ext-all-debug.js && \
+    sed -i 's/document\.cookie = "ys-" + name/ document\.cookie = "ys-"+ encodeURIComponent(name)/g' vendor/ext-3.4/ext-all-debug.js && \
+    sed -i 's/name\.substr(3)/decodeURIComponent(name\.substr(3))/g' vendor/ext-3.4/ext-all-debug.js && \
+    git config --global --add safe.directory '/build/tvheadend/data/dvb-scan' && \
+    ./configure --prefix=/usr --sysconfdir=/etc/tvheadend --localstatedir=/var \
+    --mandir=/usr/share/man \
+    --disable-doc --disable-execinfo --disable-ffmpeg_static --disable-hdhomerun_static \
+    --disable-libfdkaac_static --disable-libopus_static --disable-libtheora_static \
+    --disable-libvorbis_static --disable-libvpx_static --disable-libx264_static \
+    --disable-libx265_static --disable-libfdkaac \
+    --enable-bundle --enable-libav --enable-libx264 --enable-libx265 --enable-libvpx \
+    --enable-libopus --enable-libvorbis --enable-libtheora --enable-vaapi --enable-dvbcsa \
+    --enable-hdhomerun_client --enable-pngquant --enable-trace --enable-nvenc --enable-qsv \
+    --python=python3 && \
+    make -j$(nproc) && make DESTDIR=${BUILD_DIR}/install install
+
+# Build Comskip
+RUN echo "**** Building Comskip ****" && \
+    git clone https://github.com/erikkaashoek/Comskip comskip && \
+    cd comskip && git checkout "${COMSKIP_COMMIT}" && \
+    ./autogen.sh && ./configure --bindir=/usr/bin --sysconfdir=/etc/comskip && \
+    make -j$(nproc) && make DESTDIR=${BUILD_DIR}/install install
+
+# Get Comchap/Comcut
+RUN echo "**** Getting Comchap/Comcut ****" && \
+    git clone https://github.com/BrettSheleski/comchap comchap && \
+    cd comchap && git checkout "${COMCHAP_COMMIT}" && \
+    install -m 755 comchap ${BUILD_DIR}/install/usr/bin/ && \
+    install -m 755 comcut ${BUILD_DIR}/install/usr/bin/
+
+# Download Picons
+RUN echo "**** Downloading Picons ****" && \
+    mkdir -p picons/tmp picons/snp picons/srp && \
+    wget -q https://github.com/picons/picons/releases/download/2025-10-11--01-02-12/snp-full.220x132-190x102.light.on.transparent_2025-10-11--01-02-12.symlink.tar.xz \
+         -O picons/tmp/snp.tar.xz && \
+    curl -sL -H "Accept: application/vnd.github+json" \
+         https://api.github.com/repos/picons/picons/releases/tags/${PICONS_RELEASE} > picons/tmp/release.json && \
+    jq -r '.assets[]|select(.name|test("^utf8snp-full\\.220x132-190x102\\.light\\.on\\.transparent.*symlink\\.tar\\.xz$"))|.browser_download_url' \
+       picons/tmp/release.json | xargs wget -q -O picons/tmp/utf8snp.tar.xz && \
+    jq -r '.assets[]|select(.name|test("^srp-full\\.220x132-190x102\\.light\\.on\\.transparent.*symlink\\.tar\\.xz$"))|.browser_download_url' \
+       picons/tmp/release.json | xargs wget -q -O picons/tmp/srp.tar.xz && \
+    tar xfJ picons/tmp/utf8snp.tar.xz -C picons/snp --strip-components=1 && \
+    tar xfJ picons/tmp/snp.tar.xz -C picons/snp --strip-components=1 && \
+    tar xfJ picons/tmp/srp.tar.xz -C picons/srp --strip-components=1 && \
+    rm -rf picons/tmp && \
+    mkdir -p ${BUILD_DIR}/install/opt/picons && \
+    cp -a picons/snp picons/srp ${BUILD_DIR}/install/opt/picons/
+
+# Download and setup WebGrab++
+COPY templates/webgrab-config.xml.template ${BUILD_DIR}/
+RUN echo "**** Downloading WebGrab++ ****" && \
+    mkdir -p webgrab/tmp && \
+    wget -q -O webgrab/tmp/wg.tar.gz \
+         https://www.webgrabplus.com/sites/default/files/download/SW/V5.3.0/WebGrabPlus_V5.3_install.tar.gz && \
+    tar -zxf webgrab/tmp/wg.tar.gz -C webgrab && \
+    rm -rf webgrab/tmp && \
+    (cd webgrab/.wg++ && ./install.sh || true) && \
+    if [ ! -f webgrab/.wg++/WebGrab++.config.xml ]; then \
+        cp ${BUILD_DIR}/webgrab-config.xml.template webgrab/.wg++/WebGrab++.config.xml; \
+    fi && \
+    sed -i "s|<filename>guide.xml</filename>|<filename>/var/lib/tvheadend/webgrab/guide.xml</filename>|g" \
+        webgrab/.wg++/WebGrab++.config.xml && \
+    wget -q -O webgrab/tv_grab_wg++ https://www.webgrabplus.com/sites/default/files/tv_grab_wg.txt && \
+    chmod +x webgrab/tv_grab_wg++ && \
+    sed -i 's|~/.wg++/guide.xml|/var/lib/tvheadend/webgrab/guide.xml|g' webgrab/tv_grab_wg++ && \
+    mkdir -p ${BUILD_DIR}/install/opt/webgrab ${BUILD_DIR}/install/usr/bin && \
+    cp -a webgrab/.wg++ ${BUILD_DIR}/install/opt/webgrab/ && \
+    cp webgrab/tv_grab_wg++ ${BUILD_DIR}/install/usr/bin/
+
+# Final runtime image
+FROM debian:bookworm-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TVHEADEND_USER=hts \
+    TVHEADEND_UID=9981 \
+    TVHEADEND_GID=9981
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libavahi-client3 libavahi-common3 liburiparser1 \
+    libavcodec60 libavformat60 libavfilter9 libavutil58 \
+    libswscale7 libswresample4 \
+    libva-drm2 libva2 mesa-va-drivers intel-media-va-driver \
+    libvdpau1 mesa-vdpau-drivers \
+    libx264-164 libx265-199 libvpx7 libopus0 libvorbis0a libtheora0 \
+    libdvbcsa1 libhdhomerun4 \
+    libargtable2-0 libsdl2-2.0-0 \
+    dotnet-runtime-8.0 \
+    wget curl ca-certificates tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create user and directories
+RUN groupadd -g ${TVHEADEND_GID} ${TVHEADEND_USER} && \
+    useradd -u ${TVHEADEND_UID} -g ${TVHEADEND_GID} -d /var/lib/tvheadend -s /bin/bash ${TVHEADEND_USER} && \
+    usermod -aG video,audio,render ${TVHEADEND_USER} && \
+    mkdir -p /var/lib/tvheadend /etc/tvheadend /etc/comskip \
+             /var/lib/tvheadend/webgrab /var/lib/tvheadend/picons && \
+    chown -R ${TVHEADEND_USER}:${TVHEADEND_USER} /var/lib/tvheadend /etc/tvheadend
+
+# Copy built binaries and data from builder
+COPY --from=builder /build/install/ /
+
+# Create symlink for picons
+RUN ln -sf /opt/picons /var/lib/tvheadend/picons && \
+    chown -h ${TVHEADEND_USER}:${TVHEADEND_USER} /var/lib/tvheadend/picons
+
+# Expose ports
+EXPOSE 9981 9982
+
+# Setup volumes
+VOLUME ["/var/lib/tvheadend", "/recordings"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:9981/ || exit 1
+
+# Switch to tvheadend user
+USER ${TVHEADEND_USER}
+
+# Start TVHeadend
+CMD ["/usr/bin/tvheadend", "-C", "-u", "hts", "-g", "video"]
