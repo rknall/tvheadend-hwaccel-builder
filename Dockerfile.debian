@@ -42,16 +42,21 @@ COPY custom-libs/ ${BUILD_DIR}/custom-libs/
 RUN if [ -n "$(ls -A ${BUILD_DIR}/custom-libs/*.deb 2>/dev/null)" ]; then \
         echo "**** Installing custom FFmpeg/codec libraries ****" && \
         ls -lh ${BUILD_DIR}/custom-libs/ && \
-        # Install runtime libraries first
-        dpkg -i ${BUILD_DIR}/custom-libs/libavutil*.deb ${BUILD_DIR}/custom-libs/libswresample*.deb ${BUILD_DIR}/custom-libs/libswscale*.deb ${BUILD_DIR}/custom-libs/libpostproc*.deb 2>&1 || true && \
-        dpkg -i ${BUILD_DIR}/custom-libs/libavcodec6*.deb 2>&1 || true && \
-        dpkg -i ${BUILD_DIR}/custom-libs/libavformat6*.deb ${BUILD_DIR}/custom-libs/libavfilter*.deb ${BUILD_DIR}/custom-libs/libavdevice*.deb 2>&1 || true && \
-        dpkg -i ${BUILD_DIR}/custom-libs/libvpl*.deb 2>&1 || true && \
-        dpkg -i ${BUILD_DIR}/custom-libs/ffmpeg_*.deb ${BUILD_DIR}/custom-libs/ffmpeg-doc*.deb 2>&1 || true && \
+        # Install all runtime libraries first (excluding -dev packages)
+        for deb in ${BUILD_DIR}/custom-libs/*.deb; do \
+            if [[ ! "$deb" =~ -dev_ ]]; then \
+                echo "Installing: $(basename $deb)" && \
+                dpkg -i "$deb" 2>&1 || true; \
+            fi; \
+        done && \
         # Fix any dependency issues
         apt-get install -f -y && \
-        # Install dev packages
-        dpkg -i ${BUILD_DIR}/custom-libs/*-dev*.deb 2>&1 || true && \
+        # Now install all -dev packages
+        for deb in ${BUILD_DIR}/custom-libs/*-dev*.deb; do \
+            echo "Installing: $(basename $deb)" && \
+            dpkg -i "$deb" 2>&1 || true; \
+        done && \
+        # Fix any remaining dependency issues
         apt-get install -f -y && \
         # Verify installation
         echo "**** Verifying pkg-config files ****" && \
