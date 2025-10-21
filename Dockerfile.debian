@@ -29,8 +29,10 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p ${BUILD_DIR} ${OUTPUT_DIR}
 WORKDIR ${BUILD_DIR}
 
-# Copy debian package configuration files
+# Copy debian package configuration files, templates, and scripts
 COPY debian/ ${BUILD_DIR}/debian/
+COPY templates/ ${BUILD_DIR}/templates/
+COPY scripts/ ${BUILD_DIR}/scripts/
 
 # Build TVHeadend
 RUN echo "**** Building TVHeadend ****" && \
@@ -93,17 +95,7 @@ RUN echo "**** Downloading WebGrab++ ****" && \
     (cd webgrab/.wg++ && ./install.sh || true) && cd ${BUILD_DIR} && \
     # Create basic config if install.sh didn't create it
     if [ ! -f webgrab/.wg++/WebGrab++.config.xml ]; then \
-        echo '<?xml version="1.0"?>' > webgrab/.wg++/WebGrab++.config.xml && \
-        echo '<settings>' >> webgrab/.wg++/WebGrab++.config.xml && \
-        echo '  <filename>guide.xml</filename>' >> webgrab/.wg++/WebGrab++.config.xml && \
-        echo '  <mode></mode>' >> webgrab/.wg++/WebGrab++.config.xml && \
-        echo '  <postprocess grab="y" run="n">mdb</postprocess>' >> webgrab/.wg++/WebGrab++.config.xml && \
-        echo '  <user-agent>Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36</user-agent>' >> webgrab/.wg++/WebGrab++.config.xml && \
-        echo '  <logging>on</logging>' >> webgrab/.wg++/WebGrab++.config.xml && \
-        echo '  <retry time-out="5">4</retry>' >> webgrab/.wg++/WebGrab++.config.xml && \
-        echo '  <timespan>1</timespan>' >> webgrab/.wg++/WebGrab++.config.xml && \
-        echo '  <update>i</update>' >> webgrab/.wg++/WebGrab++.config.xml && \
-        echo '</settings>' >> webgrab/.wg++/WebGrab++.config.xml; \
+        cp ${BUILD_DIR}/templates/webgrab-config.xml.template webgrab/.wg++/WebGrab++.config.xml; \
     fi && \
     # Download tv_grab_wg++ wrapper
     wget -q -O webgrab/tv_grab_wg++ https://www.webgrabplus.com/sites/default/files/tv_grab_wg.txt && \
@@ -200,101 +192,20 @@ RUN VERSION=$(cd tvheadend && git describe --always --dirty 2>/dev/null || echo 
     echo "${VERSION}" > ${BUILD_DIR}/VERSION.txt && \
     echo "${ARCH}" > ${BUILD_DIR}/ARCH.txt
 
-# Create a script to copy files and generate BUILD_INFO at runtime
-RUN cat > ${BUILD_DIR}/copy-output.sh << 'COPYSCRIPT'
-#!/bin/bash
-set -e
-VERSION=$(cat /build/VERSION.txt)
-ARCH=$(cat /build/ARCH.txt)
+# Set distro-specific configuration for Debian
+RUN sed -i "s|^DISTRO=.*|DISTRO=\"Debian\"|g" ${BUILD_DIR}/scripts/distro-config.sh && \
+    sed -i "s|^DISTRO_BASE=.*|DISTRO_BASE=\"Debian Base: bookworm\"|g" ${BUILD_DIR}/scripts/distro-config.sh && \
+    sed -i "s|^PACKAGE_EXT=.*|PACKAGE_EXT=\".deb\"|g" ${BUILD_DIR}/scripts/distro-config.sh && \
+    sed -i "s|^INSTALL_CMD=.*|INSTALL_CMD=\"sudo dpkg -i\"|g" ${BUILD_DIR}/scripts/distro-config.sh && \
+    sed -i "s|^INSTALL_DEPS_CMD=.*|INSTALL_DEPS_CMD=\"sudo apt-get install -f\"|g" ${BUILD_DIR}/scripts/distro-config.sh
 
-# Copy all packages to output
-cp /build/tvheadend_${VERSION}_${ARCH}.deb /output/
-cp /build/tvheadend-comskip_${VERSION}_${ARCH}.deb /output/
-cp /build/tvheadend-picons_${VERSION}_all.deb /output/
-cp /build/tvheadend-webgrab_${VERSION}_all.deb /output/
-cp /build/tvheadend-full_${VERSION}_all.deb /output/
+# Update the copy-output script with actual build values
+RUN sed -i "s/__TVHEADEND_COMMIT__/${TVHEADEND_COMMIT}/g" ${BUILD_DIR}/scripts/copy-output.sh && \
+    sed -i "s/__COMSKIP_COMMIT__/${COMSKIP_COMMIT}/g" ${BUILD_DIR}/scripts/copy-output.sh && \
+    sed -i "s/__COMCHAP_COMMIT__/${COMCHAP_COMMIT}/g" ${BUILD_DIR}/scripts/copy-output.sh && \
+    sed -i "s/__PICONS_RELEASE__/${PICONS_RELEASE}/g" ${BUILD_DIR}/scripts/copy-output.sh
 
-# Create BUILD_INFO
-cat > /output/BUILD_INFO.txt << EOF
-TVHeadend Multi-Package Build - Debian
-========================================
-Build Date: $(date)
-Version: ${VERSION}
-Architecture: ${ARCH} (core), all (addons/meta)
-Debian Base: bookworm
-
-Components:
-  - TVHeadend (TVHEADEND_COMMIT)
-  - Comskip (COMSKIP_COMMIT)
-  - Comchap/Comcut (COMCHAP_COMMIT)
-  - Picons (PICONS_RELEASE)
-  - WebGrab++ v5.3.0
-
-Hardware Acceleration:
-  - VAAPI (Intel/AMD)
-  - NVENC (NVIDIA)
-  - QSV (Intel Quick Sync)
-  - VDPAU (NVIDIA)
-
-Packages Built:
-  1. tvheadend_${VERSION}_${ARCH}.deb (core server)
-  2. tvheadend-comskip_${VERSION}_${ARCH}.deb (commercial detection)
-  3. tvheadend-picons_${VERSION}_all.deb (channel icons)
-  4. tvheadend-webgrab_${VERSION}_all.deb (EPG grabber)
-  5. tvheadend-full_${VERSION}_all.deb (meta-package - installs all)
-
-Installation Options:
-
-  Option 1 - Install everything (recommended for new users):
-    sudo dpkg -i tvheadend-full_${VERSION}_all.deb
-    sudo apt-get install -f
-
-  Option 2 - Install core only:
-    sudo dpkg -i tvheadend_${VERSION}_${ARCH}.deb
-    sudo apt-get install -f
-
-  Option 3 - Custom installation (pick components):
-    sudo dpkg -i tvheadend_${VERSION}_${ARCH}.deb
-    sudo dpkg -i tvheadend-comskip_${VERSION}_${ARCH}.deb
-    sudo dpkg -i tvheadend-picons_${VERSION}_all.deb
-    sudo apt-get install -f
-
-Recommended (for hardware acceleration):
-  sudo apt-get install -y mesa-va-drivers mesa-vdpau-drivers intel-media-va-driver
-
-Optional (for WebGrab++):
-  sudo apt-get install dotnet-runtime-8.0
-
-Optional (for streaming):
-  sudo apt-get install streamlink
-
-Default Login:
-  Username: admin
-  Password: admin
-  (CHANGE IMMEDIATELY after first login!)
-
-Note: User 'hts' is automatically added to audio/video/render groups for hardware access.
-EOF
-
-# Replace placeholders in BUILD_INFO
-sed -i "s/TVHEADEND_COMMIT/TVHEADEND_COMMIT_PLACEHOLDER/g" /output/BUILD_INFO.txt
-sed -i "s/COMSKIP_COMMIT/COMSKIP_COMMIT_PLACEHOLDER/g" /output/BUILD_INFO.txt
-sed -i "s/COMCHAP_COMMIT/COMCHAP_COMMIT_PLACEHOLDER/g" /output/BUILD_INFO.txt
-sed -i "s/PICONS_RELEASE/PICONS_RELEASE_PLACEHOLDER/g" /output/BUILD_INFO.txt
-
-echo "Build complete! 5 packages created:"
-ls -lh /output/*.deb
-echo ""
-cat /output/BUILD_INFO.txt
-COPYSCRIPT
-
-# Now update the script to replace the commit placeholders with actual values
-RUN sed -i "s/TVHEADEND_COMMIT_PLACEHOLDER/${TVHEADEND_COMMIT}/g" ${BUILD_DIR}/copy-output.sh && \
-    sed -i "s/COMSKIP_COMMIT_PLACEHOLDER/${COMSKIP_COMMIT}/g" ${BUILD_DIR}/copy-output.sh && \
-    sed -i "s/COMCHAP_COMMIT_PLACEHOLDER/${COMCHAP_COMMIT}/g" ${BUILD_DIR}/copy-output.sh && \
-    sed -i "s/PICONS_RELEASE_PLACEHOLDER/${PICONS_RELEASE}/g" ${BUILD_DIR}/copy-output.sh
-
-RUN chmod +x ${BUILD_DIR}/copy-output.sh
+RUN chmod +x ${BUILD_DIR}/scripts/copy-output.sh ${BUILD_DIR}/scripts/distro-config.sh
 
 WORKDIR ${BUILD_DIR}
-CMD ["/build/copy-output.sh"]
+CMD ["/build/scripts/copy-output.sh"]

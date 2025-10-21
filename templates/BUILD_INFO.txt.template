@@ -1,0 +1,58 @@
+TVHeadend Multi-Package Build - __DISTRO__
+========================================
+Build Date: __BUILD_DATE__
+Version: __VERSION__
+Architecture: __ARCH__ (core), all (addons/meta)
+__DISTRO_BASE__
+
+Components:
+  - TVHeadend (__TVHEADEND_COMMIT__)
+  - Comskip (__COMSKIP_COMMIT__)
+  - Comchap/Comcut (__COMCHAP_COMMIT__)
+  - Picons (__PICONS_RELEASE__)
+  - WebGrab++ v5.3.0
+
+Hardware Acceleration:
+  - VAAPI (Intel/AMD)
+  - NVENC (NVIDIA)
+  - QSV (Intel Quick Sync)
+  - VDPAU (NVIDIA)
+
+Packages Built:
+  1. tvheadend___VERSION_____ARCH____PACKAGE_EXT__ (core server)
+  2. tvheadend-comskip___VERSION_____ARCH____PACKAGE_EXT__ (commercial detection)
+  3. tvheadend-picons___VERSION___all__PACKAGE_EXT__ (channel icons)
+  4. tvheadend-webgrab___VERSION___all__PACKAGE_EXT__ (EPG grabber)
+  5. tvheadend-full___VERSION___all__PACKAGE_EXT__ (meta-package - installs all)
+
+Installation Options:
+
+  Option 1 - Install everything (recommended for new users):
+    __INSTALL_CMD__ tvheadend-full___VERSION___all__PACKAGE_EXT__
+    __INSTALL_DEPS_CMD__
+
+  Option 2 - Install core only:
+    __INSTALL_CMD__ tvheadend___VERSION_____ARCH____PACKAGE_EXT__
+    __INSTALL_DEPS_CMD__
+
+  Option 3 - Custom installation (pick components):
+    __INSTALL_CMD__ tvheadend___VERSION_____ARCH____PACKAGE_EXT__
+    __INSTALL_CMD__ tvheadend-comskip___VERSION_____ARCH____PACKAGE_EXT__
+    __INSTALL_CMD__ tvheadend-picons___VERSION___all__PACKAGE_EXT__
+    __INSTALL_DEPS_CMD__
+
+Recommended (for hardware acceleration):
+  __INSTALL_DEPS_CMD__ mesa-va-drivers mesa-vdpau-drivers intel-media-va-driver
+
+Optional (for WebGrab++):
+  __INSTALL_DEPS_CMD__ dotnet-runtime-8.0
+
+Optional (for streaming):
+  __INSTALL_DEPS_CMD__ streamlink
+
+Default Login:
+  Username: admin
+  Password: admin
+  (CHANGE IMMEDIATELY after first login!)
+
+Note: User 'hts' is automatically added to audio/video/render groups for hardware access.
