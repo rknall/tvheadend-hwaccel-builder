@@ -62,6 +62,18 @@ if [ ! -f "$DOCKERFILE" ]; then
     exit 1
 fi
 
+# Check for custom libraries (only for package builds)
+if [ "$BUILD_DOCKER_CONTAINER" = false ]; then
+    if [ -d "custom-libs" ] && [ -n "$(ls -A custom-libs/*.deb 2>/dev/null)" ]; then
+        echo -e "${YELLOW}Custom libraries detected in custom-libs/${NC}"
+        echo "The following custom packages will be bundled:"
+        ls -lh custom-libs/*.deb
+        echo ""
+        echo -e "${YELLOW}Note: FFmpeg and codec libraries will be bundled into tvheadend package${NC}"
+        echo ""
+    fi
+fi
+
 if [ "$BUILD_DOCKER_CONTAINER" = true ]; then
     # Build Docker runtime container
     echo ""

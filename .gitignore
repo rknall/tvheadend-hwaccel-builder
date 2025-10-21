@@ -4,6 +4,9 @@ output/
 # Docker build cache
 .docker/
 
+# Custom library packages (too large for git)
+custom-libs/*.deb
+
 # macOS
 .DS_Store
 
@@ -13,3 +16,6 @@ output/
 *~
 .vscode/
 .idea/
+
+# MCP files
+.playwright-mcp/

@@ -3,8 +3,8 @@ Version: 4.3-__VERSION__
 Section: video
 Priority: optional
 Architecture: __ARCH__
-Depends: libavahi-client3, libavahi-common3, liburiparser1, zlib1g, libavcodec59 | libavcodec-extra59, libavformat59, libavfilter8, libavutil57, libswscale6, libswresample4, libssl3, libva2, libva-drm2, libx264-164, libx265-199, libvpx7, libopus0, libvorbis0a, libtheora0, libdvbcsa1, libhdhomerun4
-Recommends: tvheadend-comskip, ffmpeg, streamlink, mesa-va-drivers, mesa-vdpau-drivers, intel-media-va-driver
+Depends: libavahi-client3, libavahi-common3, liburiparser1, zlib1g, libssl3, libva2, libva-drm2, libdvbcsa1, libhdhomerun4
+Recommends: tvheadend-comskip, streamlink, mesa-va-drivers, mesa-vdpau-drivers, intel-media-va-driver
 Suggests: tvheadend-picons, tvheadend-webgrab, pngquant, nvidia-driver
 Maintainer: Roland Knall <rknall@gmail.com>
 Description: TV streaming server with hardware acceleration

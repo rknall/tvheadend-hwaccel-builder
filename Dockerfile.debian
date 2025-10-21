@@ -34,6 +34,22 @@ COPY debian/ ${BUILD_DIR}/debian/
 COPY templates/ ${BUILD_DIR}/templates/
 COPY scripts/ ${BUILD_DIR}/scripts/
 
+# Copy custom libraries if available (optional)
+RUN mkdir -p ${BUILD_DIR}/custom-libs
+COPY custom-libs/*.deb ${BUILD_DIR}/custom-libs/ 2>/dev/null || true
+
+# Install custom libraries if provided
+RUN if [ -n "$(ls -A ${BUILD_DIR}/custom-libs/*.deb 2>/dev/null)" ]; then \
+        echo "**** Installing custom FFmpeg/codec libraries ****" && \
+        ls -lh ${BUILD_DIR}/custom-libs/ && \
+        dpkg -i ${BUILD_DIR}/custom-libs/*.deb || true && \
+        apt-get install -f -y && \
+        touch ${BUILD_DIR}/.using-custom-libs && \
+        echo "**** Custom libraries installed ****"; \
+    else \
+        echo "**** No custom libraries found, using system packages ****"; \
+    fi
+
 # Build TVHeadend
 RUN echo "**** Building TVHeadend ****" && \
     git clone https://github.com/tvheadend/tvheadend.git tvheadend && \
@@ -116,7 +132,34 @@ RUN mkdir -p pkg-tvheadend/DEBIAN pkg-tvheadend/usr/bin pkg-tvheadend/usr/share/
 RUN echo "**** Assembling tvheadend core package ****" && \
     cp -a tvh-install/usr/* pkg-tvheadend/usr/ && \
     cp ${BUILD_DIR}/debian/default/tvheadend pkg-tvheadend/etc/default/tvheadend && \
-    cp ${BUILD_DIR}/debian/systemd/tvheadend.service pkg-tvheadend/lib/systemd/system/tvheadend.service
+    cp ${BUILD_DIR}/debian/systemd/tvheadend.service pkg-tvheadend/lib/systemd/system/tvheadend.service && \
+    # Bundle custom libraries if used
+    if [ -f ${BUILD_DIR}/.using-custom-libs ]; then \
+        echo "**** Bundling custom FFmpeg/codec libraries ****" && \
+        ARCH=$(dpkg --print-architecture) && \
+        mkdir -p pkg-tvheadend/usr/lib/${ARCH}-linux-gnu pkg-tvheadend/usr/bin && \
+        # Copy FFmpeg binaries
+        cp -a /usr/bin/ffmpeg /usr/bin/ffprobe pkg-tvheadend/usr/bin/ 2>/dev/null || true && \
+        # Copy all libav* libraries
+        cp -a /usr/lib/${ARCH}-linux-gnu/libavcodec*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libavformat*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libavfilter*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libavutil*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libswscale*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libswresample*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libpostproc*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        # Copy codec libraries
+        cp -a /usr/lib/${ARCH}-linux-gnu/libx264*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libx265*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libvpx*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libopus*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libvorbis*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libtheora*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        cp -a /usr/lib/${ARCH}-linux-gnu/libogg*.so* pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ 2>/dev/null || true && \
+        echo "**** Bundled libraries: ****" && \
+        ls -lh pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/ | head -20 && \
+        du -sh pkg-tvheadend/usr/lib/${ARCH}-linux-gnu/; \
+    fi
 
 # Assemble comskip package
 RUN echo "**** Assembling comskip package ****" && \
