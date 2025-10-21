@@ -36,7 +36,7 @@ COPY scripts/ ${BUILD_DIR}/scripts/
 
 # Copy custom libraries if available (optional)
 RUN mkdir -p ${BUILD_DIR}/custom-libs
-COPY custom-libs/*.deb ${BUILD_DIR}/custom-libs/ 2>/dev/null || true
+COPY custom-libs/ ${BUILD_DIR}/custom-libs/
 
 # Install custom libraries if provided
 RUN if [ -n "$(ls -A ${BUILD_DIR}/custom-libs/*.deb 2>/dev/null)" ]; then \
