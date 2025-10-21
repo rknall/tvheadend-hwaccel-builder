@@ -291,7 +291,6 @@ The image is available from multiple registries:
 
 - **Docker Hub**: `docker pull rknall/tvheadend-hwaccel:latest`
 - **GitHub Container Registry**: `docker pull ghcr.io/rknall/tvheadend-hwaccel:latest`
-- **GitLab Container Registry**: `docker pull registry.gitlab.com/rknall/tvhbuilder:latest`
 
 All registries contain the same multi-architecture images.
 

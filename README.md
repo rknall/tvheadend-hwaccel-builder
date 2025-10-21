@@ -61,7 +61,7 @@ docker run -d \
   rknall/tvheadend-hwaccel:latest
 
 # Or using docker-compose
-curl -O https://raw.githubusercontent.com/rknall/TVHBuilder/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/rknall/tvheadend-hwaccel-builder/main/docker-compose.yml
 docker compose up -d
 ```
 
@@ -81,8 +81,8 @@ Full Docker documentation: [docs/DOCKER.md](docs/DOCKER.md)
 #### Build Commands
 
 ```bash
-git clone https://github.com/rknall/TVHBuilder.git
-cd TVHBuilder
+git clone https://github.com/rknall/tvheadend-hwaccel-builder.git
+cd tvheadend-hwaccel-builder
 chmod +x build-tvheadend.sh
 
 # Build Debian packages
