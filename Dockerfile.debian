@@ -42,21 +42,15 @@ COPY custom-libs/ ${BUILD_DIR}/custom-libs/
 RUN if [ -n "$(ls -A ${BUILD_DIR}/custom-libs/*.deb 2>/dev/null)" ]; then \
         echo "**** Installing custom FFmpeg/codec libraries ****" && \
         ls -lh ${BUILD_DIR}/custom-libs/ && \
-        # Install all runtime libraries first (excluding -dev packages)
-        for deb in ${BUILD_DIR}/custom-libs/*.deb; do \
-            if [[ ! "$deb" =~ -dev_ ]]; then \
-                echo "Installing: $(basename $deb)" && \
-                dpkg -i "$deb" 2>&1 || true; \
-            fi; \
-        done && \
+        # Remove conflicting system FFmpeg packages first
+        echo "**** Removing system FFmpeg packages ****" && \
+        apt-get remove -y --purge libavcodec-dev libavformat-dev libavfilter-dev libavutil-dev \
+            libswscale-dev libswresample-dev libpostproc-dev libavdevice-dev || true && \
+        apt-get autoremove -y && \
+        # Install all packages at once (dpkg will handle dependencies)
+        echo "**** Installing all custom library packages ****" && \
+        dpkg -i ${BUILD_DIR}/custom-libs/*.deb || true && \
         # Fix any dependency issues
-        apt-get install -f -y && \
-        # Now install all -dev packages
-        for deb in ${BUILD_DIR}/custom-libs/*-dev*.deb; do \
-            echo "Installing: $(basename $deb)" && \
-            dpkg -i "$deb" 2>&1 || true; \
-        done && \
-        # Fix any remaining dependency issues
         apt-get install -f -y && \
         # Verify installation
         echo "**** Verifying pkg-config files ****" && \
