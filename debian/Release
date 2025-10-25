@@ -5,10 +5,10 @@ Codename: stable
 Architectures: amd64 all
 Components: main
 Description: TVHeadend with hardware acceleration support
-Date: Sat, 25 Oct 2025 10:47:05 +0000
+Date: Sat, 25 Oct 2025 11:37:36 +0000
 MD5Sum:
- 3a2bd0b4c1fb46a23d89b3935201a2bd Packages
- 43972315316c6e50345a5b161b499289 Packages.gz
+ 140f5ca7dc7988f576acf84ab4a60470 Packages
+ c0c007be70280b6c7eb9e3cf0cec8fc8 Packages.gz
 SHA256:
- 2ccdd63f81d3763709aea9804521c806f5266f19c159f76c235c32b538ee9134 Packages
- 532cb292bd3b5819a243bd3281d6df5aa9b80370b99fcd055847563f3096a012 Packages.gz
+ 781d0bdf66392e70c7f337c06eb644fba4502fef49c66f11b2d7a7be0b06fb7e Packages
+ e815985e9b15108909d3e0ac118faccfa7d1bc4890e04166507316311d8b7c73 Packages.gz
