@@ -17,10 +17,16 @@ jobs:
     permissions:
       contents: write
       packages: write
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -37,11 +43,15 @@ jobs:
         run: |
           chmod +x build-dependencies.sh
           ./build-dependencies.sh
+        env:
+          DOCKER_DEFAULT_PLATFORM: linux/${{ matrix.arch }}
 
       - name: Build TVHeadend packages
         run: |
           chmod +x build-tvheadend.sh
           ./build-tvheadend.sh
+        env:
+          DOCKER_DEFAULT_PLATFORM: linux/${{ matrix.arch }}
 
       - name: List built packages
         run: |
@@ -58,41 +68,55 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tvheadend-debian-packages-${{ github.sha }}
+          name: tvheadend-debian-packages-${{ matrix.arch }}-${{ github.sha }}
           path: output/*.deb
           retention-days: 30
 
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Checkout gh-pages branch
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/checkout@v4
         with:
           ref: gh-pages
           path: gh-pages
 
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: tvheadend-debian-packages-*
+
       - name: Create apt repository
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           # Install required tools
           sudo apt-get update
           sudo apt-get install -y dpkg-dev
 
-          # Get architecture from packages
-          ARCH=$(dpkg-deb -f output/tvheadend_*.deb Architecture)
-
           # Create repository structure in gh-pages
           mkdir -p gh-pages/debian/pool/main
 
-          # Copy TVHeadend packages
-          cp output/*.deb gh-pages/debian/pool/main/
+          # Copy all packages from artifacts
+          find artifacts -name "*.deb" -exec cp {} gh-pages/debian/pool/main/ \;
 
-          # Copy FFmpeg and libvpl dependency packages
-          cp custom-libs/*.deb gh-pages/debian/pool/main/
+          # List what we have
+          echo "Packages in repository:"
+          ls -lh gh-pages/debian/pool/main/
 
           # Create Packages file for each architecture
           cd gh-pages/debian
 
-          # Scan packages
-          dpkg-scanpackages --arch ${ARCH} pool/ > Packages
+          # Scan packages for both architectures
+          dpkg-scanpackages --arch amd64 pool/ > Packages
+          dpkg-scanpackages --arch arm64 pool/ >> Packages
           dpkg-scanpackages --arch all pool/ >> Packages
           gzip -k -f Packages
 
@@ -102,7 +126,7 @@ jobs:
           Label: tvheadend-hwaccel
           Suite: stable
           Codename: stable
-          Architectures: ${ARCH} all
+          Architectures: amd64 arm64 all
           Components: main
           Description: TVHeadend with hardware acceleration support
           Date: $(date -R)
@@ -117,20 +141,26 @@ jobs:
           cd ../..
 
       - name: Create installation instructions
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
-          # Get build date and architecture
+          # Get build date
           BUILD_DATE=$(date -R)
-          ARCH=$(dpkg-deb -f output/tvheadend_*.deb Architecture)
 
-          # Start README
+          # Start README with badges
           cat > gh-pages/README.md <<EOF
           # TVHeadend Hardware Acceleration Packages
+
+          ![Build Status](https://github.com/${{ github.repository }}/actions/workflows/build.yml/badge.svg)
+          ![Docker Build](https://github.com/${{ github.repository }}/actions/workflows/docker.yml/badge.svg)
+          ![GitHub release](https://img.shields.io/github/v/release/${{ github.repository }}?include_prereleases)
+          ![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20arm64-blue)
+          ![FFmpeg](https://img.shields.io/badge/FFmpeg-7.1.2-green)
+          ![libvpl](https://img.shields.io/badge/libvpl-2.15.0-green)
+          ![License](https://img.shields.io/github/license/${{ github.repository }})
 
           This repository provides Debian packages for TVHeadend with hardware acceleration support (VAAPI, NVENC, QSV).
 
           **Last Updated:** ${BUILD_DATE}
-          **Architecture:** ${ARCH}, all (architecture-independent packages)
+          **Architectures:** amd64, arm64, all
 
           ## Quick Start
 
@@ -153,8 +183,8 @@ jobs:
 
           EOF
 
-          # Add TVHeadend package information
-          for deb in output/*.deb; do
+          # Add TVHeadend package information from repository
+          for deb in gh-pages/debian/pool/main/tvheadend*.deb; do
             if [ -f "$deb" ]; then
               PACKAGE=$(dpkg-deb -f "$deb" Package)
               VERSION=$(dpkg-deb -f "$deb" Version)
@@ -181,7 +211,7 @@ jobs:
 
           EOF
 
-          for deb in custom-libs/*.deb; do
+          for deb in gh-pages/debian/pool/main/{ffmpeg,libvpl}*.deb; do
             if [ -f "$deb" ]; then
               PACKAGE=$(dpkg-deb -f "$deb" Package)
               VERSION=$(dpkg-deb -f "$deb" Version)
@@ -311,21 +341,9 @@ jobs:
           EOF
 
       - name: Publish to GitHub Pages
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           cd gh-pages
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update apt repository" && git push)
-
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: output/*.deb
-          generate_release_notes: true
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update apt repository [skip ci]" && git push)
