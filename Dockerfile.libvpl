@@ -22,10 +22,11 @@ WORKDIR ${BUILD_DIR}
 RUN wget -q https://github.com/intel/libvpl/archive/refs/tags/v${LIBVPL_VERSION}.tar.gz && \
     tar xzf v${LIBVPL_VERSION}.tar.gz && \
     cd libvpl-${LIBVPL_VERSION} && \
-    # Get Debian packaging files
-    git clone --depth=1 --branch=debian/1%2.15.0-1 https://salsa.debian.org/multimedia-team/libvpl.git debian-packaging && \
-    cp -r debian-packaging/debian . && \
-    rm -rf debian-packaging
+    # Get Debian packaging files from salsa.debian.org
+    wget -q https://salsa.debian.org/multimedia-team/libvpl/-/archive/debian/1%252.15.0-1/libvpl-debian-1%252.15.0-1.tar.gz && \
+    tar xzf libvpl-debian-1%252.15.0-1.tar.gz && \
+    cp -r libvpl-debian-1%252.15.0-1/debian . && \
+    rm -rf libvpl-debian-1%252.15.0-1*
 
 # Build packages
 RUN cd libvpl-${LIBVPL_VERSION} && \
