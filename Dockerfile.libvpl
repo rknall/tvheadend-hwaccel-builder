@@ -9,16 +9,15 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV BUILD_DIR=/build \
     OUTPUT_DIR=/output
 
-# Install build dependencies
+# Install basic build tools (mk-build-deps will install the rest)
 RUN apt-get update && apt-get install -y \
-    build-essential devscripts debhelper git wget cmake \
-    pkg-config libdrm-dev libva-dev libx11-dev libwayland-dev \
+    build-essential devscripts debhelper git wget equivs \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p ${BUILD_DIR} ${OUTPUT_DIR}
 WORKDIR ${BUILD_DIR}
 
-# Download libvpl source
+# Download libvpl source and install build dependencies
 RUN wget -q -O libvpl-source.tar.gz https://github.com/intel/libvpl/archive/refs/tags/v${LIBVPL_VERSION}.tar.gz && \
     tar xzf libvpl-source.tar.gz && \
     cd libvpl-${LIBVPL_VERSION} && \
@@ -26,7 +25,10 @@ RUN wget -q -O libvpl-source.tar.gz https://github.com/intel/libvpl/archive/refs
     wget -q -O debian-packaging.tar.gz https://salsa.debian.org/debian/libvpl/-/archive/1c8cbe5/libvpl-1c8cbe5.tar.gz && \
     tar xzf debian-packaging.tar.gz && \
     cp -r libvpl-1c8cbe5/debian . && \
-    rm -rf debian-packaging.tar.gz libvpl-1c8cbe5
+    rm -rf debian-packaging.tar.gz libvpl-1c8cbe5 && \
+    # Install build dependencies automatically
+    mk-build-deps --install --remove --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Build packages
 RUN cd libvpl-${LIBVPL_VERSION} && \

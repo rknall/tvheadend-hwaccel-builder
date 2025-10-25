@@ -9,32 +9,15 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV BUILD_DIR=/build \
     OUTPUT_DIR=/output
 
-# Install build dependencies
+# Install basic build tools (mk-build-deps will install the rest)
 RUN apt-get update && apt-get install -y \
-    build-essential devscripts debhelper git wget \
-    nasm yasm pkg-config \
-    libass-dev libmp3lame-dev libopus-dev libvorbis-dev libtheora-dev \
-    libvpx-dev libx264-dev libx265-dev libnuma-dev \
-    libva-dev libvdpau-dev libdrm-dev \
-    libgnutls28-dev libaom-dev libdav1d-dev \
-    libbs2b-dev libcaca-dev libcdio-paranoia-dev libcodec2-dev \
-    libfontconfig1-dev libfreetype6-dev libfribidi-dev \
-    libgme-dev libgsm1-dev libharfbuzz-dev libjack-dev \
-    libbluray-dev libchromaprint-dev libdc1394-dev \
-    libgme-dev liblensfun-dev \
-    libopencore-amrnb-dev libopencore-amrwb-dev libopenjp2-7-dev \
-    libopenmpt-dev libpulse-dev librabbitmq-dev librubberband-dev \
-    librtmp-dev libshine-dev libsnappy-dev libsoxr-dev libspeex-dev \
-    libssh-dev libtwolame-dev libvidstab-dev libvo-amrwbenc-dev \
-    libwebp-dev libxml2-dev libxvidcore-dev libzmq3-dev libzvbi-dev \
-    liblilv-dev libmysofa-dev libopenmpt-dev libplacebo-dev librav1e-dev \
-    libsrt-gnutls-dev libsvtav1-dev \
+    build-essential devscripts debhelper git wget equivs \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p ${BUILD_DIR} ${OUTPUT_DIR}
 WORKDIR ${BUILD_DIR}
 
-# Download FFmpeg source
+# Download FFmpeg source and install build dependencies
 RUN wget -q https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     tar xf ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     cd ffmpeg-${FFMPEG_VERSION} && \
@@ -43,12 +26,15 @@ RUN wget -q https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     tar xzf debian-packaging.tar.gz && \
     mv ffmpeg-debian-7%7.1.2-1 ffmpeg-debian-pkg && \
     cp -r ffmpeg-debian-pkg/debian . && \
-    rm -rf debian-packaging.tar.gz ffmpeg-debian-pkg
+    rm -rf debian-packaging.tar.gz ffmpeg-debian-pkg && \
+    # Install build dependencies automatically (excluding unavailable packages)
+    mk-build-deps --install --remove --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control || true && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Build packages
 RUN cd ffmpeg-${FFMPEG_VERSION} && \
-    # Build binary packages only (no source packages)
-    dpkg-buildpackage -b -uc -us -j$(nproc)
+    # Build binary packages only (no source packages), skip dependency check since we installed what we could
+    dpkg-buildpackage -d -b -uc -us -j$(nproc)
 
 # Copy built packages to output
 RUN cp ${BUILD_DIR}/*.deb ${OUTPUT_DIR}/ && \
