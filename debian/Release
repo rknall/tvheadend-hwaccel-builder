@@ -1,0 +1,14 @@
+Origin: TVHeadend HWAccel Builder
+Label: tvheadend-hwaccel
+Suite: stable
+Codename: stable
+Architectures: amd64 all
+Components: main
+Description: TVHeadend with hardware acceleration support
+Date: Sat, 25 Oct 2025 06:57:34 +0000
+MD5Sum:
+ b72d7622853e41891f7a1c6b3e7afcf1 Packages
+ 7994d0c1406c1982f02c41a6e7462637 Packages.gz
+SHA256:
+ 77167ac00708bc6653a4c7a275b32c552393b6909ec25a7be3ba6658192606a6 Packages
+ 66e90e6cc5ccd7ab80bda34ed33da4850e63843a7642ab004cde2d3a516b4f37 Packages.gz
