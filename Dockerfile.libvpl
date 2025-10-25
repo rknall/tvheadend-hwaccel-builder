@@ -19,14 +19,14 @@ RUN mkdir -p ${BUILD_DIR} ${OUTPUT_DIR}
 WORKDIR ${BUILD_DIR}
 
 # Download libvpl source
-RUN wget -q https://github.com/intel/libvpl/archive/refs/tags/v${LIBVPL_VERSION}.tar.gz && \
-    tar xzf v${LIBVPL_VERSION}.tar.gz && \
+RUN wget -q -O libvpl-source.tar.gz https://github.com/intel/libvpl/archive/refs/tags/v${LIBVPL_VERSION}.tar.gz && \
+    tar xzf libvpl-source.tar.gz && \
     cd libvpl-${LIBVPL_VERSION} && \
     # Get Debian packaging files from salsa.debian.org (commit 1c8cbe5 = debian/1:2.15.0-1)
-    wget -q https://salsa.debian.org/debian/libvpl/-/archive/1c8cbe5/libvpl-1c8cbe5.tar.gz && \
-    tar xzf libvpl-1c8cbe5.tar.gz && \
+    wget -q -O debian-packaging.tar.gz https://salsa.debian.org/debian/libvpl/-/archive/1c8cbe5/libvpl-1c8cbe5.tar.gz && \
+    tar xzf debian-packaging.tar.gz && \
     cp -r libvpl-1c8cbe5/debian . && \
-    rm -rf libvpl-1c8cbe5*
+    rm -rf debian-packaging.tar.gz libvpl-1c8cbe5
 
 # Build packages
 RUN cd libvpl-${LIBVPL_VERSION} && \
