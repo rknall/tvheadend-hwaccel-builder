@@ -40,6 +40,16 @@ jobs:
           sudo docker system prune -af
           df -h
 
+      - name: Build FFmpeg and libvpl dependencies
+        run: |
+          chmod +x build-dependencies.sh
+          ./build-dependencies.sh
+
+      - name: Build TVHeadend packages
+        run: |
+          chmod +x build-tvheadend.sh
+          ./build-tvheadend.sh
+
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3

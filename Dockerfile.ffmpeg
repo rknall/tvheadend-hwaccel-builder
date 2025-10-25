@@ -54,4 +54,3 @@ RUN cp ${BUILD_DIR}/*.deb ${OUTPUT_DIR}/ && \
     ls -lh ${OUTPUT_DIR}/
 
 WORKDIR ${OUTPUT_DIR}
-CMD ["sh", "-c", "cp *.deb /output/ && ls -lh /output/"]
