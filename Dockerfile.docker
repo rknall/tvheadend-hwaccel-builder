@@ -10,23 +10,23 @@ LABEL org.opencontainers.image.description="TVHeadend TV streaming server with V
 LABEL org.opencontainers.image.authors="Roland Knall <roland@knall.family>"
 LABEL org.opencontainers.image.source="https://github.com/rknall/TVHBuilder"
 
+# Get target architecture for multi-arch builds
+ARG TARGETARCH
+
 ENV DEBIAN_FRONTEND=noninteractive \
     TVHEADEND_USER=hts \
     TVHEADEND_UID=9981 \
     TVHEADEND_GID=9981
 
-# Copy custom FFmpeg and libvpl packages
-COPY custom-libs/*.deb /tmp/custom-libs/
+# Copy packages from architecture-specific directory
+COPY packages/${TARGETARCH}/*.deb /tmp/packages/
 
-# Copy TVHeadend packages
-COPY output/*.deb /tmp/tvheadend-packages/
-
-# Install runtime packages only (skip -dev, -dbgsym, -extra packages)
+# Install packages with filtering
 RUN apt-get update && \
     apt-get install -y gdebi-core && \
-    echo "Installing custom libraries (FFmpeg, libvpl)..." && \
-    # Install only runtime libraries (not -dev, -dbgsym, or -extra packages)
-    for deb in /tmp/custom-libs/*.deb; do \
+    echo "Installing packages for ${TARGETARCH}..." && \
+    # Install only runtime packages (skip -dev, -dbgsym, -extra variants)
+    for deb in /tmp/packages/*.deb; do \
         case "$(basename $deb)" in \
             *-dev_* | *-dbgsym_* | *-extra_* | *-extra[0-9]*_*) \
                 echo "Skipping: $(basename $deb)" ;; \
@@ -35,9 +35,7 @@ RUN apt-get update && \
                 gdebi -n "$deb" || true ;; \
         esac \
     done && \
-    echo "Installing TVHeadend packages..." && \
-    gdebi -n /tmp/tvheadend-packages/tvheadend-full_*.deb && \
-    rm -rf /tmp/custom-libs /tmp/tvheadend-packages && \
+    rm -rf /tmp/packages && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Expose ports
