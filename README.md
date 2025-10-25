@@ -170,9 +170,11 @@ Hardware-accelerated transcoding can reduce CPU usage by 80-90% and enable:
 
 ### Supported Hardware
 
-- **Intel GPUs**: 6th gen and newer (VAAPI, QSV)
+- **Intel GPUs** (amd64 only): 6th gen and newer (VAAPI, QSV)
 - **AMD GPUs**: All GCN and newer (VAAPI)
 - **NVIDIA GPUs**: GTX 600 series and newer (NVENC, VDPAU)
+
+**Note:** Intel Quick Sync (QSV) via libvpl is only available in amd64 builds. ARM64 builds support VAAPI, NVENC, and VDPAU but not QSV.
 
 ### Install Hardware Drivers
 
