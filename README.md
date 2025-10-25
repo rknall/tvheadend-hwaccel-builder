@@ -1,9 +1,27 @@
 # TVHeadend Hardware Acceleration Packages
 
+![Build Status](https://github.com/rknall/tvheadend-hwaccel-builder/actions/workflows/build.yml/badge.svg)
+![Docker Build](https://github.com/rknall/tvheadend-hwaccel-builder/actions/workflows/docker.yml/badge.svg)
+![GitHub release](https://img.shields.io/github/v/release/rknall/tvheadend-hwaccel-builder?include_prereleases)
+![License](https://img.shields.io/github/license/rknall/tvheadend-hwaccel-builder)
+
+**Core Components:**
+![TVHeadend](https://img.shields.io/badge/TVHeadend-4.3--dev-orange)
+![FFmpeg](https://img.shields.io/badge/FFmpeg-7.1.2-green)
+![libvpl](https://img.shields.io/badge/libvpl-2.15.0-green)
+
+**Addons:**
+![Comskip](https://img.shields.io/badge/Comskip-latest-blue)
+![Picons](https://img.shields.io/badge/Picons-2025--10--17-blue)
+![WebGrab++](https://img.shields.io/badge/WebGrab++-5.3.0-blue)
+
+**Platforms:**
+![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20arm64-blue)
+
 This repository provides Debian packages for TVHeadend with hardware acceleration support (VAAPI, NVENC, QSV).
 
-**Last Updated:** Sat, 25 Oct 2025 11:37:36 +0000
-**Architecture:** amd64, all (architecture-independent packages)
+**Last Updated:** Sat, 25 Oct 2025 18:58:22 +0000
+**Architectures:** amd64, arm64, all
 
 ## Quick Start
 
@@ -30,6 +48,12 @@ sudo apt-get install tvheadend-full
 - **Size:** 471K
 - **Description:** Commercial detection and removal tools for TVHeadend
 
+#### tvheadend-comskip
+- **Version:** 4.3-v4.3-2500-g7de8bf482-dirty
+- **Architecture:** arm64
+- **Size:** 464K
+- **Description:** Commercial detection and removal tools for TVHeadend
+
 #### tvheadend-full
 - **Version:** 4.3-v4.3-2500-g7de8bf482-dirty
 - **Architecture:** all
@@ -54,6 +78,12 @@ sudo apt-get install tvheadend-full
 - **Size:** 14M
 - **Description:** TV streaming server with hardware acceleration
 
+#### tvheadend
+- **Version:** 4.3-v4.3-2500-g7de8bf482-dirty
+- **Architecture:** arm64
+- **Size:** 14M
+- **Description:** TV streaming server with hardware acceleration
+
 ### Dependency Packages (FFmpeg & libvpl)
 
 These packages are automatically installed as dependencies:
@@ -61,39 +91,6 @@ These packages are automatically installed as dependencies:
 - **ffmpeg-dbgsym** (7:7.1.2-1) - amd64, 763K
 - **ffmpeg-doc** (7:7.1.2-1) - all, 2.3M
 - **ffmpeg** (7:7.1.2-1) - amd64, 2.0M
-- **libavcodec-dev** (7:7.1.2-1) - amd64, 5.9M
-- **libavcodec-extra61-dbgsym** (7:7.1.2-1) - amd64, 22M
-- **libavcodec-extra61** (7:7.1.2-1) - amd64, 5.4M
-- **libavcodec-extra** (7:7.1.2-1) - amd64, 55K
-- **libavcodec61-dbgsym** (7:7.1.2-1) - amd64, 22M
-- **libavcodec61** (7:7.1.2-1) - amd64, 5.4M
-- **libavdevice-dev** (7:7.1.2-1) - amd64, 125K
-- **libavdevice61-dbgsym** (7:7.1.2-1) - amd64, 218K
-- **libavdevice61** (7:7.1.2-1) - amd64, 115K
-- **libavfilter-dev** (7:7.1.2-1) - amd64, 1.8M
-- **libavfilter-extra10-dbgsym** (7:7.1.2-1) - amd64, 5.8M
-- **libavfilter-extra10** (7:7.1.2-1) - amd64, 1.6M
-- **libavfilter-extra** (7:7.1.2-1) - amd64, 55K
-- **libavfilter10-dbgsym** (7:7.1.2-1) - amd64, 5.8M
-- **libavfilter10** (7:7.1.2-1) - amd64, 1.6M
-- **libavformat-dev** (7:7.1.2-1) - amd64, 1.4M
-- **libavformat-extra61-dbgsym** (7:7.1.2-1) - amd64, 3.5M
-- **libavformat-extra61** (7:7.1.2-1) - amd64, 1.2M
-- **libavformat-extra** (7:7.1.2-1) - amd64, 55K
-- **libavformat61-dbgsym** (7:7.1.2-1) - amd64, 3.5M
-- **libavformat61** (7:7.1.2-1) - amd64, 1.2M
-- **libavutil-dev** (7:7.1.2-1) - amd64, 510K
-- **libavutil59-dbgsym** (7:7.1.2-1) - amd64, 852K
-- **libavutil59** (7:7.1.2-1) - amd64, 363K
-- **libpostproc-dev** (7:7.1.2-1) - amd64, 85K
-- **libpostproc58-dbgsym** (7:7.1.2-1) - amd64, 64K
-- **libpostproc58** (7:7.1.2-1) - amd64, 84K
-- **libswresample-dev** (7:7.1.2-1) - amd64, 112K
-- **libswresample5-dbgsym** (7:7.1.2-1) - amd64, 109K
-- **libswresample5** (7:7.1.2-1) - amd64, 98K
-- **libswscale-dev** (7:7.1.2-1) - amd64, 254K
-- **libswscale8-dbgsym** (7:7.1.2-1) - amd64, 683K
-- **libswscale8** (7:7.1.2-1) - amd64, 225K
 - **libvpl-dev** (1:2.15.0-1) - amd64, 101K
 - **libvpl-examples-dbgsym** (1:2.15.0-1) - amd64, 190K
 - **libvpl-examples** (1:2.15.0-1) - amd64, 4.3M

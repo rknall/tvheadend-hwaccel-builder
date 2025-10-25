@@ -1116,10 +1116,10 @@ Depends: libavahi-client3, libavahi-common3, liburiparser1, zlib1g, libssl3, lib
 Recommends: tvheadend-comskip, streamlink, mesa-va-drivers, mesa-vdpau-drivers, intel-media-va-driver
 Suggests: tvheadend-picons, tvheadend-webgrab, pngquant, nvidia-driver
 Filename: pool/main/tvheadend_v4.3-2500-g7de8bf482-dirty_amd64.deb
-Size: 14158060
-MD5sum: 182ce99716b8d7e2c62a6697224ad60b
-SHA1: 2364ae66073c63a52b4299aee227684e9349f7f4
-SHA256: f07edcbd1f8e6f0563865d142abfa1e3e43b627994c604e9011e106a855a3518
+Size: 14157244
+MD5sum: afc612cbe40ce75972821c9764f89331
+SHA1: b0e5fbf2e8fedabc3ca83922270f7828f3617ff7
+SHA256: 015e6dced15c67a9877eb0ae9312337e5fa3ca0472539767ffc969eca77813bc
 Section: video
 Priority: optional
 Homepage: https://tvheadend.org
@@ -1142,10 +1142,10 @@ Maintainer: Roland Knall <rknall@gmail.com>
 Depends: libargtable2-0, libsdl2-2.0-0
 Recommends: tvheadend
 Filename: pool/main/tvheadend-comskip_v4.3-2500-g7de8bf482-dirty_amd64.deb
-Size: 482188
-MD5sum: 9a303c9dd8a397c5fbcf13f9d344634a
-SHA1: d5509e6a0f7a37ad1a6ee86d0f24756a2a28d177
-SHA256: def35bc62d099124a6c7c210aa1da1e63837477d10c10311f009b5bb85f14688
+Size: 482220
+MD5sum: 711f3ef4fe999410cb3a5257e546bb9d
+SHA1: 0eec1f162051dd18ffb8b12bd2d661a190617649
+SHA256: 9ab4d69b02a138be53edcc376df40917ae501b382aa4b1263acd7476e8c2daf9
 Section: video
 Priority: optional
 Homepage: https://github.com/erikkaashoek/Comskip
@@ -1164,9 +1164,9 @@ Maintainer: Roland Knall <rknall@gmail.com>
 Depends: tvheadend (= 4.3-v4.3-2500-g7de8bf482-dirty), tvheadend-comskip (= 4.3-v4.3-2500-g7de8bf482-dirty), tvheadend-picons (= 4.3-v4.3-2500-g7de8bf482-dirty), tvheadend-webgrab (= 4.3-v4.3-2500-g7de8bf482-dirty)
 Filename: pool/main/tvheadend-full_v4.3-2500-g7de8bf482-dirty_all.deb
 Size: 1020
-MD5sum: d0ae45c2549a22a627afabfdb4f74275
-SHA1: 320ae4b4ce78864e4e5b33f730fe4cbffc13425c
-SHA256: 00c0c57e753d1ae5e4c2ad06992a14d058fd7e4c1f781d6950bcc3705b829b39
+MD5sum: 85a8c82043f5b5f2e5e7945f42c29593
+SHA1: 75c02870b5ea5e0e54e2ea24c9a2b936a4da7846
+SHA256: 99eb6674951043dcd409aacf2b40e7659b38baa91b19e2f77ae7625f3004edf0
 Section: video
 Priority: optional
 Homepage: https://tvheadend.org
@@ -1189,10 +1189,10 @@ Architecture: all
 Maintainer: Roland Knall <rknall@gmail.com>
 Suggests: tvheadend
 Filename: pool/main/tvheadend-picons_v4.3-2500-g7de8bf482-dirty_all.deb
-Size: 67615724
-MD5sum: 344115b2166458155d1ded49c0645e02
-SHA1: 38abe116212b5853ddaf5004c1924484823adafa
-SHA256: cd5b2074ffe887444b9c6816cf04e2769c6c51ae4d9db59a7061d36ca16cb553
+Size: 67615800
+MD5sum: a812c024f90d37f0038966f5c412654b
+SHA1: 011e6abf259e940df37b3d2540327dbce4205e0b
+SHA256: 6c50e545207e85634a29e5a0464e66fa301b13432c6f27563f01ef404adee8c8
 Section: video
 Priority: optional
 Homepage: https://github.com/picons/picons
@@ -1213,10 +1213,156 @@ Depends: python3, python3-requests, xmltv, perl
 Recommends: dotnet-runtime-8.0 | dotnet-runtime-6.0 | mono-runtime
 Suggests: tvheadend
 Filename: pool/main/tvheadend-webgrab_v4.3-2500-g7de8bf482-dirty_all.deb
-Size: 5943564
-MD5sum: 11920c719990bcbfed4b294680e632b6
-SHA1: 853a046800647750710237f35d02c05d230f6d43
-SHA256: c13eb6bee4a9f5497cae13d3e69064c21a5014ae3ba255a155a0a4b2511a7029
+Size: 5942872
+MD5sum: c854bff36ac4caf7c4de5fce00e60eea
+SHA1: f444f553ef3105f293dd4ffc5acd154e52855a41
+SHA256: 10d78ec4bd474d711e05a9fc6e2123f02053d324b2bdc76f3290aff195954c98
+Section: video
+Priority: optional
+Homepage: https://www.webgrabplus.com
+Description: WebGrab++ EPG grabber for TVHeadend
+ WebGrab++ is a multi-site incremental EPG (Electronic Program Guide) grabber.
+ Includes tv_grab_wg++ wrapper for TVHeadend integration.
+ .
+ Version: 5.3.0
+ .
+ EPG data is stored in /var/lib/tvheadend/webgrab/guide.xml
+
+Package: ffmpeg-doc
+Source: ffmpeg
+Version: 7:7.1.2-1
+Architecture: all
+Maintainer: Debian Multimedia Maintainers <debian-multimedia@lists.debian.org>
+Installed-Size: 38500
+Depends: libjs-jquery, libjs-bootstrap5
+Filename: pool/main/ffmpeg-doc_7.1.2-1_all.deb
+Size: 2376412
+MD5sum: 7a5a474196afdc964d31f1ce99bdaf9a
+SHA1: bafb6916207b59cd3ee8bf2308b96ecfbb30c4b5
+SHA256: 831fee0de3bfd17b5af07e4e5fdeaff4af4c4e493a44b730d01c2b20ed7b455d
+Section: doc
+Priority: optional
+Multi-Arch: foreign
+Homepage: https://ffmpeg.org/
+Description: Documentation of the FFmpeg multimedia framework
+ FFmpeg is the leading multimedia framework, able to decode, encode, transcode,
+ mux, demux, stream, filter and play pretty much anything that humans and
+ machines have created. It supports the most obscure ancient formats up to the
+ cutting edge.
+ .
+ This package contains the HTML documentation for the FFmpeg multimedia
+ framework including the API documentation created by doxygen and the manpages
+ for the libraries.
+
+Package: tvheadend
+Version: 4.3-v4.3-2500-g7de8bf482-dirty
+Architecture: arm64
+Maintainer: Roland Knall <rknall@gmail.com>
+Depends: libavahi-client3, libavahi-common3, liburiparser1, zlib1g, libssl3, libva2, libva-drm2, libdvbcsa1, libhdhomerun4
+Recommends: tvheadend-comskip, streamlink, mesa-va-drivers, mesa-vdpau-drivers, intel-media-va-driver
+Suggests: tvheadend-picons, tvheadend-webgrab, pngquant, nvidia-driver
+Filename: pool/main/tvheadend_v4.3-2500-g7de8bf482-dirty_arm64.deb
+Size: 13959252
+MD5sum: 92bcda21be1e3e1d68c4ff2b594c1ce1
+SHA1: a4d384be9ffbec79ee39eb283c56f6bfe5e1e79b
+SHA256: 463b708a400316bd481f19d7762524d3b6ffd64509980256dff3f41b259fb094
+Section: video
+Priority: optional
+Homepage: https://tvheadend.org
+Description: TV streaming server with hardware acceleration
+ TVHeadend is a TV streaming server supporting DVB, ATSC, IPTV, and SAT>IP.
+ Features live TV streaming, recording, timeshifting, and EPG integration.
+ .
+ Hardware acceleration enabled for:
+  - Intel Quick Sync Video (QSV)
+  - NVIDIA NVENC
+  - AMD/Intel VAAPI
+  - VDPAU (NVIDIA)
+ .
+ This is the core package. Install tvheadend-full for all features.
+
+Package: tvheadend-comskip
+Version: 4.3-v4.3-2500-g7de8bf482-dirty
+Architecture: arm64
+Maintainer: Roland Knall <rknall@gmail.com>
+Depends: libargtable2-0, libsdl2-2.0-0
+Recommends: tvheadend
+Filename: pool/main/tvheadend-comskip_v4.3-2500-g7de8bf482-dirty_arm64.deb
+Size: 474404
+MD5sum: 8612f87f007bf0ce112bdc7a012fd695
+SHA1: be23d4ba3525a5851ee21f25cd528d67493cf7fb
+SHA256: 9d8b75aa77f473f9b45ec678f027e10b0bef707e269e4e9a53480f8edeccf282
+Section: video
+Priority: optional
+Homepage: https://github.com/erikkaashoek/Comskip
+Description: Commercial detection and removal tools for TVHeadend
+ Comskip detects commercials in recorded video files. Includes:
+  - comskip: Commercial detection engine
+  - comchap: Add chapter markers at commercial breaks
+  - comcut: Remove commercials from video files
+ .
+ Integrates with TVHeadend for automatic commercial processing.
+
+Package: tvheadend-full
+Version: 4.3-v4.3-2500-g7de8bf482-dirty
+Architecture: all
+Maintainer: Roland Knall <rknall@gmail.com>
+Depends: tvheadend (= 4.3-v4.3-2500-g7de8bf482-dirty), tvheadend-comskip (= 4.3-v4.3-2500-g7de8bf482-dirty), tvheadend-picons (= 4.3-v4.3-2500-g7de8bf482-dirty), tvheadend-webgrab (= 4.3-v4.3-2500-g7de8bf482-dirty)
+Filename: pool/main/tvheadend-full_v4.3-2500-g7de8bf482-dirty_all.deb
+Size: 1020
+MD5sum: 85a8c82043f5b5f2e5e7945f42c29593
+SHA1: 75c02870b5ea5e0e54e2ea24c9a2b936a4da7846
+SHA256: 99eb6674951043dcd409aacf2b40e7659b38baa91b19e2f77ae7625f3004edf0
+Section: video
+Priority: optional
+Homepage: https://tvheadend.org
+Description: Complete TVHeadend installation with all extras (meta-package)
+ This meta-package installs the complete TVHeadend suite including:
+  - TVHeadend core streaming server
+  - Comskip commercial detection tools
+  - Picons channel icons
+  - WebGrab++ EPG grabber
+ .
+ Installing this package provides a complete TV streaming and recording
+ solution with commercial detection, channel icons, and EPG data.
+ .
+ This package contains no files itself; it only ensures all components
+ are installed together.
+
+Package: tvheadend-picons
+Version: 4.3-v4.3-2500-g7de8bf482-dirty
+Architecture: all
+Maintainer: Roland Knall <rknall@gmail.com>
+Suggests: tvheadend
+Filename: pool/main/tvheadend-picons_v4.3-2500-g7de8bf482-dirty_all.deb
+Size: 67615800
+MD5sum: a812c024f90d37f0038966f5c412654b
+SHA1: 011e6abf259e940df37b3d2540327dbce4205e0b
+SHA256: 6c50e545207e85634a29e5a0464e66fa301b13432c6f27563f01ef404adee8c8
+Section: video
+Priority: optional
+Homepage: https://github.com/picons/picons
+Description: Channel icons (picons) for TVHeadend
+ Service name picons for TVHeadend EPG and channel lists.
+ Includes both SNP (Service Name Picon) and SRP (Service Reference Picon)
+ formats in 220x132 resolution.
+ .
+ Release: 2025-10-17--08-28-59
+ .
+ Automatically linked to /var/lib/tvheadend/picons when tvheadend is installed.
+
+Package: tvheadend-webgrab
+Version: 4.3-v4.3-2500-g7de8bf482-dirty
+Architecture: all
+Maintainer: Roland Knall <rknall@gmail.com>
+Depends: python3, python3-requests, xmltv, perl
+Recommends: dotnet-runtime-8.0 | dotnet-runtime-6.0 | mono-runtime
+Suggests: tvheadend
+Filename: pool/main/tvheadend-webgrab_v4.3-2500-g7de8bf482-dirty_all.deb
+Size: 5942872
+MD5sum: c854bff36ac4caf7c4de5fce00e60eea
+SHA1: f444f553ef3105f293dd4ffc5acd154e52855a41
+SHA256: 10d78ec4bd474d711e05a9fc6e2123f02053d324b2bdc76f3290aff195954c98
 Section: video
 Priority: optional
 Homepage: https://www.webgrabplus.com
@@ -1261,9 +1407,9 @@ Maintainer: Roland Knall <rknall@gmail.com>
 Depends: tvheadend (= 4.3-v4.3-2500-g7de8bf482-dirty), tvheadend-comskip (= 4.3-v4.3-2500-g7de8bf482-dirty), tvheadend-picons (= 4.3-v4.3-2500-g7de8bf482-dirty), tvheadend-webgrab (= 4.3-v4.3-2500-g7de8bf482-dirty)
 Filename: pool/main/tvheadend-full_v4.3-2500-g7de8bf482-dirty_all.deb
 Size: 1020
-MD5sum: d0ae45c2549a22a627afabfdb4f74275
-SHA1: 320ae4b4ce78864e4e5b33f730fe4cbffc13425c
-SHA256: 00c0c57e753d1ae5e4c2ad06992a14d058fd7e4c1f781d6950bcc3705b829b39
+MD5sum: 85a8c82043f5b5f2e5e7945f42c29593
+SHA1: 75c02870b5ea5e0e54e2ea24c9a2b936a4da7846
+SHA256: 99eb6674951043dcd409aacf2b40e7659b38baa91b19e2f77ae7625f3004edf0
 Section: video
 Priority: optional
 Homepage: https://tvheadend.org
@@ -1286,10 +1432,10 @@ Architecture: all
 Maintainer: Roland Knall <rknall@gmail.com>
 Suggests: tvheadend
 Filename: pool/main/tvheadend-picons_v4.3-2500-g7de8bf482-dirty_all.deb
-Size: 67615724
-MD5sum: 344115b2166458155d1ded49c0645e02
-SHA1: 38abe116212b5853ddaf5004c1924484823adafa
-SHA256: cd5b2074ffe887444b9c6816cf04e2769c6c51ae4d9db59a7061d36ca16cb553
+Size: 67615800
+MD5sum: a812c024f90d37f0038966f5c412654b
+SHA1: 011e6abf259e940df37b3d2540327dbce4205e0b
+SHA256: 6c50e545207e85634a29e5a0464e66fa301b13432c6f27563f01ef404adee8c8
 Section: video
 Priority: optional
 Homepage: https://github.com/picons/picons
@@ -1310,10 +1456,10 @@ Depends: python3, python3-requests, xmltv, perl
 Recommends: dotnet-runtime-8.0 | dotnet-runtime-6.0 | mono-runtime
 Suggests: tvheadend
 Filename: pool/main/tvheadend-webgrab_v4.3-2500-g7de8bf482-dirty_all.deb
-Size: 5943564
-MD5sum: 11920c719990bcbfed4b294680e632b6
-SHA1: 853a046800647750710237f35d02c05d230f6d43
-SHA256: c13eb6bee4a9f5497cae13d3e69064c21a5014ae3ba255a155a0a4b2511a7029
+Size: 5942872
+MD5sum: c854bff36ac4caf7c4de5fce00e60eea
+SHA1: f444f553ef3105f293dd4ffc5acd154e52855a41
+SHA256: 10d78ec4bd474d711e05a9fc6e2123f02053d324b2bdc76f3290aff195954c98
 Section: video
 Priority: optional
 Homepage: https://www.webgrabplus.com
