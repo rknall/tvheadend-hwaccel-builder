@@ -41,8 +41,9 @@ RUN wget -q https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     # Get Debian packaging files from salsa.debian.org (debian/7:7.1.2-1)
     wget -q -O debian-packaging.tar.gz https://salsa.debian.org/multimedia-team/ffmpeg/-/archive/debian%2F7%257.1.2-1/ffmpeg-debian-7%257.1.2-1.tar.gz && \
     tar xzf debian-packaging.tar.gz && \
-    cp -r ffmpeg-debian-7%257.1.2-1/debian . && \
-    rm -rf debian-packaging.tar.gz ffmpeg-debian-7%257.1.2-1
+    mv ffmpeg-debian-7%7.1.2-1 ffmpeg-debian-pkg && \
+    cp -r ffmpeg-debian-pkg/debian . && \
+    rm -rf debian-packaging.tar.gz ffmpeg-debian-pkg
 
 # Build packages
 RUN cd ffmpeg-${FFMPEG_VERSION} && \
