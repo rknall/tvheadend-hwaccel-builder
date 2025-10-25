@@ -21,13 +21,19 @@ COPY custom-libs/*.deb /tmp/custom-libs/
 # Copy TVHeadend packages
 COPY output/*.deb /tmp/tvheadend-packages/
 
-# Install all packages using gdebi to handle dependencies
+# Install runtime packages only (skip -dev, -dbgsym, -extra packages)
 RUN apt-get update && \
     apt-get install -y gdebi-core && \
     echo "Installing custom libraries (FFmpeg, libvpl)..." && \
+    # Install only runtime libraries (not -dev, -dbgsym, or -extra packages)
     for deb in /tmp/custom-libs/*.deb; do \
-        echo "Installing: $(basename $deb)" && \
-        gdebi -n "$deb" || true; \
+        case "$(basename $deb)" in \
+            *-dev_* | *-dbgsym_* | *-extra_* | *-extra[0-9]*_*) \
+                echo "Skipping: $(basename $deb)" ;; \
+            *) \
+                echo "Installing: $(basename $deb)" && \
+                gdebi -n "$deb" || true ;; \
+        esac \
     done && \
     echo "Installing TVHeadend packages..." && \
     gdebi -n /tmp/tvheadend-packages/tvheadend-full_*.deb && \
