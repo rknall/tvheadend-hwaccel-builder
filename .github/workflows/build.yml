@@ -119,51 +119,195 @@ jobs:
       - name: Create installation instructions
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
-          cat > gh-pages/README.md <<'EOF'
+          # Get build date and architecture
+          BUILD_DATE=$(date -R)
+          ARCH=$(dpkg-deb -f output/tvheadend_*.deb Architecture)
+
+          # Start README
+          cat > gh-pages/README.md <<EOF
           # TVHeadend Hardware Acceleration Packages
 
           This repository provides Debian packages for TVHeadend with hardware acceleration support (VAAPI, NVENC, QSV).
 
-          ## Installation
+          **Last Updated:** ${BUILD_DATE}
+          **Architecture:** ${ARCH}, all (architecture-independent packages)
 
-          Add the repository to your system:
+          ## Quick Start
 
-          ```bash
+          Add the repository to your Debian/Ubuntu system:
+
+          \`\`\`bash
           # Add the repository
           echo "deb [trusted=yes] https://$(echo ${{ github.repository }} | cut -d'/' -f1).github.io/$(echo ${{ github.repository }} | cut -d'/' -f2)/debian/ stable main" | sudo tee /etc/apt/sources.list.d/tvheadend-hwaccel.list
 
           # Update package list
           sudo apt-get update
-          ```
+
+          # Install full suite
+          sudo apt-get install tvheadend-full
+          \`\`\`
 
           ## Available Packages
 
-          - **tvheadend** - Core TV streaming server
-          - **tvheadend-comskip** - Commercial detection tools
-          - **tvheadend-picons** - Channel icons
-          - **tvheadend-webgrab** - EPG grabber
-          - **tvheadend-full** - Meta-package (installs all components)
+          ### TVHeadend Packages
 
-          ## Install Options
+          EOF
 
-          ### Full Installation
-          ```bash
+          # Add TVHeadend package information
+          for deb in output/*.deb; do
+            if [ -f "$deb" ]; then
+              PACKAGE=$(dpkg-deb -f "$deb" Package)
+              VERSION=$(dpkg-deb -f "$deb" Version)
+              PKG_ARCH=$(dpkg-deb -f "$deb" Architecture)
+              DESCRIPTION=$(dpkg-deb -f "$deb" Description | head -n1)
+              SIZE=$(ls -lh "$deb" | awk '{print $5}')
+
+              cat >> gh-pages/README.md <<EOF
+          #### ${PACKAGE}
+          - **Version:** ${VERSION}
+          - **Architecture:** ${PKG_ARCH}
+          - **Size:** ${SIZE}
+          - **Description:** ${DESCRIPTION}
+
+          EOF
+            fi
+          done
+
+          # Add dependency packages information
+          cat >> gh-pages/README.md <<'EOF'
+          ### Dependency Packages (FFmpeg & libvpl)
+
+          These packages are automatically installed as dependencies:
+
+          EOF
+
+          for deb in custom-libs/*.deb; do
+            if [ -f "$deb" ]; then
+              PACKAGE=$(dpkg-deb -f "$deb" Package)
+              VERSION=$(dpkg-deb -f "$deb" Version)
+              PKG_ARCH=$(dpkg-deb -f "$deb" Architecture)
+              SIZE=$(ls -lh "$deb" | awk '{print $5}')
+
+              cat >> gh-pages/README.md <<EOF
+          - **${PACKAGE}** (${VERSION}) - ${PKG_ARCH}, ${SIZE}
+          EOF
+            fi
+          done
+
+          # Add installation instructions
+          cat >> gh-pages/README.md <<'EOF'
+
+          ## Installation Options
+
+          ### Full Installation (Recommended)
+          Installs TVHeadend with all optional components:
+
+          \`\`\`bash
           sudo apt-get install tvheadend-full
-          ```
+          \`\`\`
+
+          This includes:
+          - TVHeadend core server
+          - Comskip (commercial detection)
+          - Picons (channel icons)
+          - WebGrab++ (EPG grabber)
 
           ### Core Only
-          ```bash
+          Minimal installation with just the TVHeadend server:
+
+          \`\`\`bash
           sudo apt-get install tvheadend
-          ```
+          \`\`\`
 
           ### Custom Selection
-          ```bash
-          sudo apt-get install tvheadend tvheadend-comskip tvheadend-picons
-          ```
+          Pick and choose components:
+
+          \`\`\`bash
+          # Core + commercial detection
+          sudo apt-get install tvheadend tvheadend-comskip
+
+          # Core + channel icons
+          sudo apt-get install tvheadend tvheadend-picons
+
+          # Core + EPG grabber
+          sudo apt-get install tvheadend tvheadend-webgrab
+          \`\`\`
+
+          ## Hardware Acceleration Support
+
+          The packages include support for:
+
+          - **VAAPI** - Intel/AMD GPU acceleration
+          - **NVENC/NVDEC** - NVIDIA GPU encoding/decoding
+          - **QSV** - Intel Quick Sync Video
+          - **VDPAU** - NVIDIA video decoding (legacy)
+
+          ## Package Details
+
+          ### tvheadend
+          Core TV streaming server with:
+          - Multi-format recording (TS, Matroska, MP4)
+          - Hardware-accelerated transcoding
+          - Web interface on port 9981
+          - HTSP streaming on port 9982
+          - EPG support
+          - DVB, IPTV, SAT>IP, and HDHomeRun support
+
+          ### tvheadend-comskip
+          Commercial detection suite:
+          - **comskip** - Detects commercials in recordings
+          - **comchap** - Adds chapter markers at commercial breaks
+          - **comcut** - Removes commercials from recordings
+
+          ### tvheadend-picons
+          Channel icon library (~65MB):
+          - SNP format (Service Name Picons)
+          - SRP format (Service Reference Picons)
+          - Automatically linked to TVHeadend
+
+          ### tvheadend-webgrab
+          EPG data grabber:
+          - WebGrab++ v5.3.0
+          - tv_grab_wg++ wrapper for TVHeadend integration
+          - Supports multiple EPG sources
+
+          ## System Requirements
+
+          - Debian 12 (Bookworm) or Ubuntu 24.04+
+          - For hardware acceleration:
+            - Intel: i965-va-driver or intel-media-va-driver
+            - NVIDIA: nvidia-driver with CUDA support
+            - AMD: mesa-va-drivers
+
+          ## Post-Installation
+
+          1. Access web interface: http://your-server-ip:9981
+          2. Default credentials: admin / admin (change immediately!)
+          3. Configure tuners and networks
+          4. Set up EPG sources
+          5. Enable hardware acceleration in transcoding profiles
 
           ## Manual Download
 
-          You can also download .deb files directly from the [Releases](https://github.com/${{ github.repository }}/releases) page.
+          Download .deb files directly:
+          - [GitHub Releases](https://github.com/${{ github.repository }}/releases)
+          - [Artifacts from latest build](https://github.com/${{ github.repository }}/actions)
+
+          ## Build Information
+
+          - **Repository:** https://github.com/${{ github.repository }}
+          - **CI/CD:** GitHub Actions
+          - **Build Time:** ~26 minutes
+          - **Source:**
+            - TVHeadend: [tvheadend/tvheadend](https://github.com/tvheadend/tvheadend)
+            - FFmpeg: 7.1.2 (Debian packaging)
+            - libvpl: 2.15.0 (Intel Video Processing Library)
+
+          ## Support
+
+          - [Report Issues](https://github.com/${{ github.repository }}/issues)
+          - [TVHeadend Documentation](https://tvheadend.org/projects/tvheadend/wiki)
+          - [TVHeadend Forums](https://tvheadend.org/d/)
           EOF
 
       - name: Publish to GitHub Pages
