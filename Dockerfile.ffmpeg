@@ -1,0 +1,56 @@
+# Dockerfile.ffmpeg - Build FFmpeg 7.1.2 Debian packages
+# Builds multi-architecture FFmpeg packages with hardware acceleration support
+
+FROM debian:bookworm AS builder
+
+ARG FFMPEG_VERSION=7.1.2
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV BUILD_DIR=/build \
+    OUTPUT_DIR=/output
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential devscripts debhelper git wget \
+    nasm yasm pkg-config \
+    libass-dev libmp3lame-dev libopus-dev libvorbis-dev libtheora-dev \
+    libvpx-dev libx264-dev libx265-dev libnuma-dev \
+    libva-dev libvdpau-dev libdrm-dev \
+    libgnutls28-dev libaom-dev libdav1d-dev \
+    libbs2b-dev libcaca-dev libcdio-paranoia-dev libcodec2-dev \
+    libflite1-dev libfontconfig1-dev libfreetype6-dev libfribidi-dev \
+    libgme-dev libgsm1-dev libharfbuzz-dev libjack-dev \
+    libbluray-dev libchromaprint-dev libdc1394-dev \
+    libfdk-aac-dev libgme-dev liblensfun-dev \
+    libopencore-amrnb-dev libopencore-amrwb-dev libopenjp2-7-dev \
+    libopenmpt-dev libpulse-dev librabbitmq-dev librubberband-dev \
+    librtmp-dev libshine-dev libsnappy-dev libsoxr-dev libspeex-dev \
+    libssh-dev libtwolame-dev libvidstab-dev libvo-amrwbenc-dev \
+    libwebp-dev libxml2-dev libxvidcore-dev libzmq3-dev libzvbi-dev \
+    liblilv-dev libmysofa-dev libopenmpt-dev libplacebo-dev librav1e-dev \
+    libsrt-gnutls-dev libsvtav1-dev libglslang-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p ${BUILD_DIR} ${OUTPUT_DIR}
+WORKDIR ${BUILD_DIR}
+
+# Download FFmpeg source
+RUN wget -q https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz && \
+    tar xf ffmpeg-${FFMPEG_VERSION}.tar.xz && \
+    cd ffmpeg-${FFMPEG_VERSION} && \
+    # Get Debian packaging files from Debian's salsa repository
+    git clone --depth=1 --branch=debian/7%7.1.2-1 https://salsa.debian.org/multimedia-team/ffmpeg.git debian-packaging && \
+    cp -r debian-packaging/debian . && \
+    rm -rf debian-packaging
+
+# Build packages
+RUN cd ffmpeg-${FFMPEG_VERSION} && \
+    # Build binary packages only (no source packages)
+    dpkg-buildpackage -b -uc -us -j$(nproc)
+
+# Copy built packages to output
+RUN cp ${BUILD_DIR}/*.deb ${OUTPUT_DIR}/ && \
+    ls -lh ${OUTPUT_DIR}/
+
+WORKDIR ${OUTPUT_DIR}
+CMD ["sh", "-c", "cp *.deb /output/ && ls -lh /output/"]

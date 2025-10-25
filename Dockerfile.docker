@@ -22,16 +22,27 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TVHEADEND_UID=9981 \
     TVHEADEND_GID=9981
 
-# Install runtime dependencies
+# Copy custom FFmpeg and libvpl packages
+COPY custom-libs/*.deb /tmp/custom-libs/
+
+# Install custom FFmpeg and libvpl packages first
+RUN apt-get update && \
+    apt-get install -y gdebi-core && \
+    for deb in /tmp/custom-libs/*.deb; do \
+        echo "Installing: $(basename $deb)" && \
+        gdebi -n "$deb" || true; \
+    done && \
+    rm -rf /tmp/custom-libs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install remaining runtime dependencies
 RUN apt-get update && apt-get install -y \
     # Core runtime libraries
     libavahi-client3 libavahi-common3 liburiparser1 \
-    libavcodec60 libavformat60 libavfilter9 libavutil58 \
-    libswscale7 libswresample4 \
-    # Hardware acceleration
+    # Hardware acceleration (VAAPI, VDPAU)
     libva-drm2 libva2 mesa-va-drivers intel-media-va-driver \
     libvdpau1 mesa-vdpau-drivers \
-    # Codec libraries
+    # Codec libraries (from system if not in custom packages)
     libx264-164 libx265-199 libvpx7 libopus0 libvorbis0a libtheora0 \
     # DVB and streaming
     libdvbcsa1 libhdhomerun4 \

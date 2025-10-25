@@ -33,7 +33,12 @@ jobs:
           sudo docker system prune -af
           df -h
 
-      - name: Build packages
+      - name: Build FFmpeg and libvpl dependencies
+        run: |
+          chmod +x build-dependencies.sh
+          ./build-dependencies.sh
+
+      - name: Build TVHeadend packages
         run: |
           chmod +x build-tvheadend.sh
           ./build-tvheadend.sh
@@ -77,8 +82,11 @@ jobs:
           # Create repository structure in gh-pages
           mkdir -p gh-pages/debian/pool/main
 
-          # Copy new packages
+          # Copy TVHeadend packages
           cp output/*.deb gh-pages/debian/pool/main/
+
+          # Copy FFmpeg and libvpl dependency packages
+          cp custom-libs/*.deb gh-pages/debian/pool/main/
 
           # Create Packages file for each architecture
           cd gh-pages/debian
