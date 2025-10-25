@@ -152,11 +152,20 @@ jobs:
           ![Build Status](https://github.com/${{ github.repository }}/actions/workflows/build.yml/badge.svg)
           ![Docker Build](https://github.com/${{ github.repository }}/actions/workflows/docker.yml/badge.svg)
           ![GitHub release](https://img.shields.io/github/v/release/${{ github.repository }}?include_prereleases)
+          ![License](https://img.shields.io/github/license/${{ github.repository }})
+
+          **Core Components:**
           ![TVHeadend](https://img.shields.io/badge/TVHeadend-4.3--dev-orange)
-          ![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20arm64-blue)
           ![FFmpeg](https://img.shields.io/badge/FFmpeg-7.1.2-green)
           ![libvpl](https://img.shields.io/badge/libvpl-2.15.0-green)
-          ![License](https://img.shields.io/github/license/${{ github.repository }})
+
+          **Addons:**
+          ![Comskip](https://img.shields.io/badge/Comskip-latest-blue)
+          ![Picons](https://img.shields.io/badge/Picons-2025--10--17-blue)
+          ![WebGrab++](https://img.shields.io/badge/WebGrab++-5.3.0-blue)
+
+          **Platforms:**
+          ![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20arm64-blue)
 
           This repository provides Debian packages for TVHeadend with hardware acceleration support (VAAPI, NVENC, QSV).
 
