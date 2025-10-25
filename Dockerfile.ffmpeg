@@ -38,8 +38,8 @@ WORKDIR ${BUILD_DIR}
 RUN wget -q https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     tar xf ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     cd ffmpeg-${FFMPEG_VERSION} && \
-    # Get Debian packaging files from salsa.debian.org
-    wget -q https://salsa.debian.org/multimedia-team/ffmpeg/-/archive/debian/7%257.1.2-1/ffmpeg-debian-7%257.1.2-1.tar.gz && \
+    # Get Debian packaging files from salsa.debian.org (debian/7:7.1.2-1)
+    wget -q https://salsa.debian.org/multimedia-team/ffmpeg/-/archive/debian%2F7%257.1.2-1/ffmpeg-debian-7%257.1.2-1.tar.gz && \
     tar xzf ffmpeg-debian-7%257.1.2-1.tar.gz && \
     cp -r ffmpeg-debian-7%257.1.2-1/debian . && \
     rm -rf ffmpeg-debian-7%257.1.2-1*
