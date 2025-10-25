@@ -33,17 +33,26 @@ fi
 # Create output directory
 mkdir -p "${OUTPUT_DIR}"
 
-echo_info "Building FFmpeg and libvpl dependency packages..."
+# Detect platform architecture
+PLATFORM="${DOCKER_DEFAULT_PLATFORM:-linux/$(uname -m)}"
+ARCH=$(echo "$PLATFORM" | cut -d'/' -f2)
+
+echo_info "Building dependency packages for ${ARCH}..."
 echo_info "This will take approximately 30-45 minutes"
 echo ""
 
-# Build libvpl first (FFmpeg might depend on it)
-echo_info "Step 1/2: Building libvpl 2.15.0..."
-docker build -t libvpl-builder -f Dockerfile.libvpl .
-docker run --rm -v "${OUTPUT_DIR}:/output" libvpl-builder
+# Build libvpl first (FFmpeg might depend on it) - but only for amd64/Intel
+if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "x86_64" ]; then
+    echo_info "Step 1/2: Building libvpl 2.15.0 (Intel only)..."
+    docker build -t libvpl-builder -f Dockerfile.libvpl .
+    docker run --rm -v "${OUTPUT_DIR}:/output" libvpl-builder
+    echo ""
+    echo_info "Step 2/2: Building FFmpeg 7.1.2..."
+else
+    echo_warn "Skipping libvpl build (Intel-only, not available for ${ARCH})"
+    echo_info "Step 1/1: Building FFmpeg 7.1.2..."
+fi
 
-echo ""
-echo_info "Step 2/2: Building FFmpeg 7.1.2..."
 docker build -t ffmpeg-builder -f Dockerfile.ffmpeg .
 docker run --rm -v "${OUTPUT_DIR}:/output" ffmpeg-builder
 
