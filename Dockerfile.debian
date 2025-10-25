@@ -88,6 +88,16 @@ RUN echo "**** Building TVHeadend ****" && \
     sed -i 's/document\.cookie = "ys-" + name/ document\.cookie = "ys-"+ encodeURIComponent(name)/g' vendor/ext-3.4/ext-all-debug.js && \
     sed -i 's/name\.substr(3)/decodeURIComponent(name\.substr(3))/g' vendor/ext-3.4/ext-all-debug.js && \
     git config --global --add safe.directory '/build/tvheadend/data/dvb-scan' && \
+    # Detect architecture for conditional hardware acceleration flags
+    ARCH=$(dpkg --print-architecture) && \
+    # Set QSV flag based on architecture (Intel Quick Sync is Intel-only via libvpl)
+    if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "i386" ]; then \
+        QSV_FLAG="--enable-qsv" && \
+        echo "Building for Intel architecture ($ARCH): QSV enabled"; \
+    else \
+        QSV_FLAG="--disable-qsv" && \
+        echo "Building for non-Intel architecture ($ARCH): QSV disabled, VAAPI/NVENC available"; \
+    fi && \
     ./configure --prefix=/usr --sysconfdir=/etc/tvheadend --localstatedir=/var \
     --mandir=/usr/share/man \
     --disable-doc --disable-execinfo --disable-ffmpeg_static --disable-hdhomerun_static \
@@ -96,7 +106,7 @@ RUN echo "**** Building TVHeadend ****" && \
     --disable-libx265_static --disable-libfdkaac \
     --enable-bundle --enable-libav --enable-libx264 --enable-libx265 --enable-libvpx \
     --enable-libopus --enable-libvorbis --enable-libtheora --enable-vaapi --enable-dvbcsa \
-    --enable-hdhomerun_client --enable-pngquant --enable-trace --enable-nvenc --enable-qsv \
+    --enable-hdhomerun_client --enable-pngquant --enable-trace --enable-nvenc $QSV_FLAG \
     --python=python3 && \
     make -j$(nproc) && make DESTDIR=${BUILD_DIR}/tvh-install install
 

@@ -28,11 +28,14 @@ RUN wget -q https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     mv ffmpeg-debian-7%7.1.2-1 ffmpeg-debian-pkg && \
     cp -r ffmpeg-debian-pkg/debian . && \
     rm -rf debian-packaging.tar.gz ffmpeg-debian-pkg && \
-    # Patch debian/rules to disable libvpl on non-amd64 architectures
+    # Patch debian/rules for architecture-specific hardware acceleration
     ARCH=$(dpkg --print-architecture) && \
     if [ "$ARCH" != "amd64" ] && [ "$ARCH" != "i386" ]; then \
-        echo "Patching debian/rules to disable libvpl for $ARCH architecture..." && \
-        sed -i 's/--enable-libvpl/--disable-libvpl/g' debian/rules; \
+        echo "Patching debian/rules for ARM architecture ($ARCH)..." && \
+        # Disable Intel-only libvpl
+        sed -i 's/--enable-libvpl/--disable-libvpl/g' debian/rules && \
+        # Enable OMX for ARM (Raspberry Pi, ARM SBCs)
+        sed -i 's/--disable-omx/--enable-omx --enable-omx-rpi/g' debian/rules; \
     fi && \
     # Install build dependencies automatically (excluding unavailable packages)
     apt-get update && \
