@@ -45,9 +45,10 @@ RUN wget -q https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz && \
         # Enable OMX for ARM (Raspberry Pi, ARM SBCs)
         sed -i 's/--disable-omx/--enable-omx --enable-omx-rpi/g' debian/rules; \
     fi && \
-    # Enable full NVIDIA support (NVENC/NVDEC/CUVID) using installed headers
+    # Enable NVIDIA support (NVENC/NVDEC/CUVID) using installed headers
+    # Note: NOT enabling --enable-cuda-nvcc as it requires full CUDA SDK
     echo "Enabling NVIDIA NVENC/NVDEC/CUVID support..." && \
-    sed -i 's/--enable-nvenc/--enable-cuda-nvcc --enable-nvenc --enable-nvdec --enable-cuvid/g' debian/rules && \
+    sed -i 's/--enable-nvenc/--enable-nvenc --enable-nvdec --enable-cuvid/g' debian/rules && \
     # Install build dependencies automatically (excluding unavailable packages)
     apt-get update && \
     mk-build-deps --install --remove --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control || true && \
