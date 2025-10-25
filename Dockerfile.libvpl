@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p ${BUILD_DIR} ${OUTPUT_DIR}
 WORKDIR ${BUILD_DIR}
 
-# Download libvpl source and install build dependencies
+# Download libvpl source, install dependencies, and build packages
 RUN wget -q -O libvpl-source.tar.gz https://github.com/intel/libvpl/archive/refs/tags/v${LIBVPL_VERSION}.tar.gz && \
     tar xzf libvpl-source.tar.gz && \
     cd libvpl-${LIBVPL_VERSION} && \
@@ -28,13 +28,11 @@ RUN wget -q -O libvpl-source.tar.gz https://github.com/intel/libvpl/archive/refs
     cp -r libvpl-1c8cbe5/debian . && \
     rm -rf debian-packaging.tar.gz libvpl-1c8cbe5 && \
     # Install build dependencies automatically (excluding unavailable packages)
+    apt-get update && \
     mk-build-deps --install --remove --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control || true && \
+    # Build packages
+    dpkg-buildpackage -d -b -uc -us -j$(nproc) && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Build packages
-RUN cd libvpl-${LIBVPL_VERSION} && \
-    # Build binary packages only (no source packages), skip dependency check since we installed what we could
-    dpkg-buildpackage -d -b -uc -us -j$(nproc)
 
 # Copy built packages to output
 RUN cp ${BUILD_DIR}/*.deb ${OUTPUT_DIR}/ && \

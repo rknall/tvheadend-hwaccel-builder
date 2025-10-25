@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p ${BUILD_DIR} ${OUTPUT_DIR}
 WORKDIR ${BUILD_DIR}
 
-# Download FFmpeg source and install build dependencies
+# Download FFmpeg source, install dependencies, and build packages
 RUN wget -q https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     tar xf ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     cd ffmpeg-${FFMPEG_VERSION} && \
@@ -29,13 +29,11 @@ RUN wget -q https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz && \
     cp -r ffmpeg-debian-pkg/debian . && \
     rm -rf debian-packaging.tar.gz ffmpeg-debian-pkg && \
     # Install build dependencies automatically (excluding unavailable packages)
+    apt-get update && \
     mk-build-deps --install --remove --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control || true && \
+    # Build packages
+    dpkg-buildpackage -d -b -uc -us -j$(nproc) && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Build packages
-RUN cd ffmpeg-${FFMPEG_VERSION} && \
-    # Build binary packages only (no source packages), skip dependency check since we installed what we could
-    dpkg-buildpackage -d -b -uc -us -j$(nproc)
 
 # Copy built packages to output
 RUN cp ${BUILD_DIR}/*.deb ${OUTPUT_DIR}/ && \
