@@ -18,17 +18,17 @@ RUN apt-get update && apt-get install -y \
     libva-dev libvdpau-dev libdrm-dev \
     libgnutls28-dev libaom-dev libdav1d-dev \
     libbs2b-dev libcaca-dev libcdio-paranoia-dev libcodec2-dev \
-    libflite1-dev libfontconfig1-dev libfreetype6-dev libfribidi-dev \
+    libfontconfig1-dev libfreetype6-dev libfribidi-dev \
     libgme-dev libgsm1-dev libharfbuzz-dev libjack-dev \
     libbluray-dev libchromaprint-dev libdc1394-dev \
-    libfdk-aac-dev libgme-dev liblensfun-dev \
+    libgme-dev liblensfun-dev \
     libopencore-amrnb-dev libopencore-amrwb-dev libopenjp2-7-dev \
     libopenmpt-dev libpulse-dev librabbitmq-dev librubberband-dev \
     librtmp-dev libshine-dev libsnappy-dev libsoxr-dev libspeex-dev \
     libssh-dev libtwolame-dev libvidstab-dev libvo-amrwbenc-dev \
     libwebp-dev libxml2-dev libxvidcore-dev libzmq3-dev libzvbi-dev \
     liblilv-dev libmysofa-dev libopenmpt-dev libplacebo-dev librav1e-dev \
-    libsrt-gnutls-dev libsvtav1-dev libglslang-dev \
+    libsrt-gnutls-dev libsvtav1-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p ${BUILD_DIR} ${OUTPUT_DIR}
