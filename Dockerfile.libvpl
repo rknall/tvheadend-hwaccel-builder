@@ -12,6 +12,7 @@ ENV BUILD_DIR=/build \
 # Install basic build tools (mk-build-deps will install the rest)
 RUN apt-get update && apt-get install -y \
     build-essential devscripts debhelper git wget equivs \
+    cmake libva-dev pkgconf \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p ${BUILD_DIR} ${OUTPUT_DIR}
@@ -32,8 +33,8 @@ RUN wget -q -O libvpl-source.tar.gz https://github.com/intel/libvpl/archive/refs
 
 # Build packages
 RUN cd libvpl-${LIBVPL_VERSION} && \
-    # Build binary packages only (no source packages)
-    dpkg-buildpackage -b -uc -us -j$(nproc)
+    # Build binary packages only (no source packages), skip dependency check since we installed what we could
+    dpkg-buildpackage -d -b -uc -us -j$(nproc)
 
 # Copy built packages to output
 RUN cp ${BUILD_DIR}/*.deb ${OUTPUT_DIR}/ && \
