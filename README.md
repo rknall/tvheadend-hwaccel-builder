@@ -2,6 +2,7 @@
 
 ![Build Status](https://github.com/rknall/tvheadend-hwaccel-builder/actions/workflows/build.yml/badge.svg)
 ![Docker Build](https://github.com/rknall/tvheadend-hwaccel-builder/actions/workflows/docker.yml/badge.svg)
+![TVHeadend](https://img.shields.io/badge/TVHeadend-4.3--dev-orange)
 ![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20arm64-blue)
 ![FFmpeg](https://img.shields.io/badge/FFmpeg-7.1.2-green)
 ![libvpl](https://img.shields.io/badge/libvpl-2.15.0-green)
