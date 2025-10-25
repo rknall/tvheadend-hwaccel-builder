@@ -34,6 +34,9 @@ COPY debian/ ${BUILD_DIR}/debian/
 COPY templates/ ${BUILD_DIR}/templates/
 COPY scripts/ ${BUILD_DIR}/scripts/
 
+# Copy patches directory
+COPY patches/ ${BUILD_DIR}/patches/
+
 # Copy custom libraries if available (optional)
 RUN mkdir -p ${BUILD_DIR}/custom-libs
 COPY custom-libs/ ${BUILD_DIR}/custom-libs/
@@ -70,6 +73,15 @@ RUN if [ -n "$(ls -A ${BUILD_DIR}/custom-libs/*.deb 2>/dev/null)" ]; then \
 RUN echo "**** Building TVHeadend ****" && \
     git clone https://github.com/tvheadend/tvheadend.git tvheadend && \
     cd tvheadend && git checkout "${TVHEADEND_COMMIT}" && \
+    echo "**** Applying patches ****" && \
+    if [ -d "${BUILD_DIR}/patches" ] && [ -n "$(ls -A ${BUILD_DIR}/patches/*.patch 2>/dev/null)" ]; then \
+        for patch in ${BUILD_DIR}/patches/*.patch; do \
+            echo "Applying patch: $(basename $patch)" && \
+            git apply --verbose "$patch" || exit 1; \
+        done; \
+    else \
+        echo "No patches found to apply"; \
+    fi && \
     sed -i 's/document\.cookie="ys-"+a/document\.cookie="ys-"+encodeURIComponent(a)/g' vendor/ext-3.4/ext-all.js && \
     sed -i 's/a\.substr(3)/decodeURIComponent(a\.substr(3))/g' vendor/ext-3.4/ext-all.js && \
     sed -i 's/document\.cookie = "ys-"+ name/ document\.cookie = "ys-"+ encodeURIComponent(name)/g' vendor/ext-3.4/ext-all-debug.js && \
