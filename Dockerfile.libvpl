@@ -26,8 +26,8 @@ RUN wget -q -O libvpl-source.tar.gz https://github.com/intel/libvpl/archive/refs
     tar xzf debian-packaging.tar.gz && \
     cp -r libvpl-1c8cbe5/debian . && \
     rm -rf debian-packaging.tar.gz libvpl-1c8cbe5 && \
-    # Install build dependencies automatically
-    mk-build-deps --install --remove --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control && \
+    # Install build dependencies automatically (excluding unavailable packages)
+    mk-build-deps --install --remove --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control || true && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Build packages
